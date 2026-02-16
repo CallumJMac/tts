@@ -4,3 +4,8 @@ ref_video/*
 target_text/*
 media/*
 outputs/*
+.venv/*
+.DS_Store
+*.pyc
+*.wav
+*.mp4
