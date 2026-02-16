@@ -1,0 +1,6 @@
+ref_audio/*
+ref_text/*
+ref_video/*
+target_text/*
+media/*
+outputs/*
