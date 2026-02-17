@@ -9,3 +9,4 @@ outputs/*
 *.pyc
 *.wav
 *.mp4
+data/*
