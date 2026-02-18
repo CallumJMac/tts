@@ -1,14 +1,14 @@
 # Dynamic Few-Shot Examples for Qwen3-TTS Voice Cloning
 
 > **Living document** — single source of truth for experiment design, progress, and decisions.
-> Last updated: 2026-02-17
+> Last updated: 2026-02-18
 
 ---
 
 ## Target Venue
 
 **Interspeech 2026** — Sydney, Australia, Sep 27 – Oct 1
-- **Submission deadline: February 25, 2026 (AoE)** — 8 days from now
+- **Submission deadline: February 25, 2026 (AoE)** — 7 days from now
 - Update deadline: March 4, 2026
 - Acceptance notification: June 5, 2026
 - Relevant tracks: Speech Synthesis, Resources and Evaluation, Generative AI for Speech
@@ -466,6 +466,14 @@ Based on Phase 2 results, the **winning approaches** to scale up are:
 
 Drop `concat_code` from Phase 3 — it doesn't outperform and has instability at high ref counts.
 
+### 2026-02-18 — Docker & Deployment Prep
+- [x] Created lean `requirements.txt` (~20 direct deps, torch installed separately via CUDA index)
+- [x] Created Dockerfile: `nvidia/cuda:12.6.3-cudnn-runtime-ubuntu22.04`, deadsnakes PPA for Python 3.12
+- [x] Resolved build issues: cu124→cu126 for torch 2.10.0, removed flash-attn (QEMU incompatible), removed discrete-speech-metrics (pypesq broken), trimmed requirements to avoid fsspec conflicts
+- [x] Docker image builds successfully on Apple Silicon via `--platform linux/amd64`
+- [x] Added `--max-new-tokens` CLI flag to `run_fewshot.py` (prevents 247s degenerate generation)
+- [x] Created `.dockerignore` to exclude .venv, .git, outputs, media from build context
+
 #### Issues to Address
 
 - [ ] **concat_code 5-ref longest took 247s** — needs investigation; likely context overflow causing degenerate autoregressive decoding. Add a max_new_tokens safety cap or ref_code length limit.
@@ -473,13 +481,268 @@ Drop `concat_code` from Phase 3 — it doesn't outperform and has instability at
 - [ ] **Need multiple seeds**: All results are from a single seed (42). Stochastic variation could explain some differences. Phase 3 must use 3 seeds.
 - [ ] **Need multiple targets**: Only 1 held-out target tested. Phase 3 must test all 5 held-out targets per speaker.
 
-### Next Steps
+---
 
-- [ ] Scale to all 5 speakers with winning approaches (embed_avg + concat_audio 2-ref + baseline)
-- [ ] Use 3 seeds and all 5 held-out targets per speaker
-- [ ] Add max_new_tokens guard for concat_code if kept
-- [ ] Consider spinning up AWS GPU for Phase 3 (~225 runs)
-- [ ] Begin paper structure / outline in parallel
+## Phase 3: AWS g5.xlarge Deployment Plan
+
+### Why g5.xlarge
+
+| Spec | Value |
+|------|-------|
+| GPU | NVIDIA A10G, 24 GB GDDR6 |
+| vCPU | 4 (AMD EPYC) |
+| RAM | 16 GB |
+| Storage | 250 GB NVMe SSD (default EBS) |
+| On-demand price | ~$1.006/hr (us-east-1) |
+| Spot price | ~$0.35-0.50/hr (60-70% savings) |
+
+**Memory budget on A10G (24 GB)**:
+- TTS model (0.6B, float16): ~1.2 GB
+- Eval models (UTMOS + WavLM-XVector + Whisper turbo + WavLM-Large): ~3.5 GB
+- Working memory / KV cache: ~2-4 GB
+- **Total**: ~8 GB peak — fits comfortably with headroom for flash-attn
+
+### Deployment Steps
+
+#### Step 1: Create requirements.txt
+Extract reproducible dependencies from the working .venv (205 packages total). Key packages:
+```
+torch==2.10.0+cu124        # CUDA build (current is MPS-only)
+torchaudio==2.10.0+cu124
+qwen-tts==0.1.1
+transformers==4.57.3
+accelerate==1.12.0
+openai-whisper==20250625
+librosa==0.11.0
+soundfile==0.13.1
+jiwer==3.1.0
+discrete-speech-metrics @ git+https://github.com/Takaaki-Saeki/DiscreteSpeechMetrics.git@350e19062839029a66d72541312852ca12c7f1b0
+flash-attn                 # NEW — not in current venv, CUDA-only
+```
+
+**Important**: The current venv has MPS-only torch (no CUDA). The Dockerfile must install the CUDA torch index.
+
+#### Step 2: Dockerfile
+```dockerfile
+FROM nvidia/cuda:12.4.1-cudnn-runtime-ubuntu22.04
+
+# System deps
+RUN apt-get update && apt-get install -y --no-install-recommends \
+    python3.12 python3.12-venv python3.12-dev python3-pip \
+    ffmpeg git libsndfile1 && \
+    rm -rf /var/lib/apt/lists/*
+
+# Python venv
+RUN python3.12 -m venv /opt/venv
+ENV PATH="/opt/venv/bin:$PATH"
+
+# Install torch with CUDA first (separate layer for caching)
+RUN pip install --no-cache-dir \
+    torch==2.10.0 torchaudio==2.10.0 \
+    --index-url https://download.pytorch.org/whl/cu124
+
+# Install flash-attn (requires torch+CUDA already installed)
+RUN pip install --no-cache-dir flash-attn --no-build-isolation
+
+# Install remaining deps
+COPY requirements.txt /tmp/requirements.txt
+RUN pip install --no-cache-dir -r /tmp/requirements.txt
+
+# Pre-download models at build time (baked into image)
+RUN python3 -c "from qwen_tts import Qwen3TTSModel; Qwen3TTSModel.from_pretrained('Qwen/Qwen3-TTS-12Hz-0.6B-Base', device_map='cpu')"
+RUN python3 -c "import torch; torch.hub.load('tarepan/SpeechMOS:v1.2.0', 'utmos22_strong', trust_repo=True)"
+RUN python3 -c "from transformers import WavLMForXVector; WavLMForXVector.from_pretrained('microsoft/wavlm-base-plus-sv')"
+RUN python3 -c "import whisper; whisper.load_model('turbo')"
+RUN python3 -c "from transformers import WavLMModel; WavLMModel.from_pretrained('microsoft/wavlm-large')"
+
+# Copy project code
+WORKDIR /app
+COPY src/ src/
+COPY scripts/ scripts/
+COPY data/libritts_r_aligned/ data/libritts_r_aligned/
+
+ENTRYPOINT ["python3", "scripts/run_fewshot.py"]
+```
+
+#### Step 3: Validate locally before spending on GPU
+
+**3a. Validate requirements.txt can be generated**
+```bash
+pip freeze > requirements.txt
+# Then manually edit to replace torch/torchaudio with CUDA variants
+```
+
+**3b. Build Docker image locally (CPU-only test)**
+```bash
+docker build -t tts-fewshot .
+# Test import chain (no GPU needed)
+docker run --rm tts-fewshot python3 -c "from src.experiment.run_fewshot import main; print('OK')"
+```
+
+**3c. Dry-run: test the experiment runner with --skip-eval**
+```bash
+docker run --rm -v $(pwd)/outputs:/app/outputs tts-fewshot \
+    --speakers 1188 --approaches single_baseline \
+    --num-refs 1 --strategies random --seeds 42 \
+    --held-out-targets 1 --device cpu --skip-eval
+```
+This validates the full code path (manifest loading, ref pool, combiner, TTS generation) without needing a GPU. Generation will be slow on CPU but proves correctness.
+
+#### Step 4: Deploy to AWS
+
+**4a. Launch instance**
+```bash
+# Using Deep Learning AMI (has NVIDIA drivers pre-installed)
+aws ec2 run-instances \
+    --image-id ami-0xxxx  # Deep Learning Base OSS (Ubuntu 22.04)
+    --instance-type g5.xlarge \
+    --key-name your-key \
+    --security-group-ids sg-xxxx \
+    --block-device-mappings '[{"DeviceName":"/dev/sda1","Ebs":{"VolumeSize":100}}]'
+```
+
+**4b. Setup on instance**
+```bash
+# Install Docker + NVIDIA Container Toolkit (if not in AMI)
+# Or just use conda/venv directly on the DLAMI — simpler
+git clone <repo-url> && cd tts
+pip install -r requirements.txt
+```
+
+**4c. Run Phase 3**
+```bash
+python scripts/run_fewshot.py \
+    --manifest data/libritts_r_aligned/manifest.json \
+    --approaches single_baseline embed_avg concat_audio \
+    --num-refs 1 2 3 5 \
+    --strategies random longest \
+    --seeds 42 123 456 \
+    --held-out-targets 5 \
+    --device cuda:0 \
+    --dtype float16 \
+    --flash-attn \
+    --skip-speechbertscore
+```
+
+### Cost-Effective Strategies
+
+| Strategy | Savings | Trade-off |
+|----------|---------|-----------|
+| **Use spot instances** | 60-70% off on-demand | May be interrupted (unlikely for short jobs) |
+| **Skip Docker, use DLAMI directly** | Faster setup, no image build | Less reproducible, but fine for iteration |
+| **Pre-download models to S3** | Avoids re-downloading per instance | One-time setup |
+| **Use tmux + nohup** | Survive SSH disconnects | Simple, no orchestration needed |
+| **Run without SpeechBERTScore** | Skip ~1.2GB model, faster eval | Add back for final results only |
+
+### Estimated Phase 3 Cost
+
+| Item | Estimate |
+|------|----------|
+| Runs | ~225 (5 speakers x 5 targets x 9 configs) |
+| TTS per run (A10G, float16+flash-attn) | ~2-4s |
+| Eval per run | ~1.5-2s |
+| Total compute | ~225 x 5s = ~19 min |
+| Buffer (overhead, model loading, I/O) | 3x = ~60 min |
+| Instance cost (spot @ $0.40/hr) | **~$0.40** |
+| Instance cost (on-demand @ $1.00/hr) | **~$1.00** |
+
+This is extremely cheap. Even with debugging time, setup, and re-runs, the total cost should be under $5.
+
+### Validation Checklist (Before Spending on GPU)
+
+- [ ] `requirements.txt` generated and verified
+- [ ] Dockerfile builds successfully locally
+- [ ] `docker run ... --skip-eval --device cpu` completes without errors
+- [ ] Import chain works: `from src.experiment.run_fewshot import main`
+- [ ] Data directory (`data/libritts_r_aligned/`) is included or accessible
+- [ ] Script args for Phase 3 configuration are correct (approaches, refs, seeds)
+- [ ] `--device cuda:0 --dtype float16 --flash-attn` flags tested in a minimal CUDA container (if available)
+- [ ] Results CSV path is correct and writable
+
+### Two Deployment Approaches
+
+**Option A: Docker (most reproducible)**
+- Build image with all deps + models baked in
+- Push to ECR, pull on g5.xlarge
+- `docker run --gpus all ...`
+- Pro: fully reproducible, portable
+- Con: large image (~15-20 GB with models), longer build
+
+**Option B: DLAMI + venv (fastest to deploy)**
+- Launch g5.xlarge with Deep Learning AMI (Ubuntu 22.04)
+- Clone repo, create venv, pip install
+- Models download from HuggingFace on first run (~10 GB, cached after)
+- Pro: fastest path to running, simpler debugging
+- Con: less reproducible, dep versions may drift
+
+**Recommendation**: Start with **Option B** (DLAMI + venv) for Phase 3. It's faster to iterate and the compute cost is trivial. Create the Dockerfile for reproducibility/paper submission once results are finalized.
+
+---
+
+## Next Steps
+
+### Completed (2026-02-18)
+- [x] Generate `requirements.txt` (lean, direct deps only — 20 packages, torch/torchaudio installed separately)
+- [x] Create Dockerfile (CUDA 12.6, Python 3.12, all models baked in, ~15-20 GB image)
+- [x] Fix: base image needed deadsnakes PPA for Python 3.12, torch 2.10.0 needs cu126 index (not cu124)
+- [x] Fix: flash-attn removed from Docker build (needs nvcc + slow under QEMU, install natively on GPU)
+- [x] Fix: discrete-speech-metrics excluded (pypesq broken with modern numpy, not needed for Phase 3)
+- [x] Fix: lean requirements.txt to avoid fsspec/nemo-toolkit version conflicts
+- [x] Validate: Docker image builds successfully (`docker build --platform linux/amd64 -t tts-fewshot .`)
+- [x] Add `--max-new-tokens` CLI flag and plumb through all generation call sites
+
+### Up Next: Deploy & Run Phase 3
+
+**Step 1: Validate Docker image**
+```bash
+docker run --platform linux/amd64 --rm tts-fewshot \
+    python3 -c "from src.experiment.run_fewshot import main; print('OK')"
+```
+
+**Step 2: Launch g5.xlarge**
+- Use Deep Learning AMI (Ubuntu 22.04) with NVIDIA drivers pre-installed
+- Spot instance recommended (~$0.40/hr vs $1.00/hr on-demand)
+- 100 GB EBS volume sufficient
+
+**Step 3: Setup on instance (Option A — Docker)**
+```bash
+# Pull image from registry
+docker pull <registry>/tts-fewshot:latest
+# Run Phase 3
+docker run --gpus all -v /home/ubuntu/outputs:/app/outputs tts-fewshot
+```
+
+**Step 3 alt: Setup on instance (Option B — DLAMI + venv, recommended)**
+```bash
+git clone <repo-url> && cd tts
+python3.12 -m venv .venv && source .venv/bin/activate
+pip install torch==2.10.0 torchaudio==2.10.0 --index-url https://download.pytorch.org/whl/cu126
+pip install flash-attn --no-build-isolation
+pip install -r requirements.txt
+```
+
+**Step 4: Run Phase 3 experiment**
+```bash
+tmux new -s phase3
+python scripts/run_fewshot.py \
+    --approaches single_baseline embed_avg concat_audio \
+    --num-refs 1 2 3 5 \
+    --strategies random longest \
+    --seeds 42 123 456 \
+    --held-out-targets 5 \
+    --device cuda:0 --dtype float16 --flash-attn \
+    --skip-speechbertscore
+```
+Expected: ~225 runs, ~5s each on A10G = ~19 min compute, ~60 min with overhead.
+
+**Step 5: Retrieve and analyze results**
+- Pull `outputs/fewshot/results.csv` from instance
+- Run statistical analysis (mean +/- std per config, significance tests vs baseline)
+- Update PLAN.md with Phase 3 results
+
+**Step 6: Paper decision**
+- If results hold across speakers/seeds: outline paper structure, target Interspeech 2026 (Feb 25 AoE)
+- If results are noisy: consider more seeds, additional metrics, or later venue (SLT 2026, SSW)
 
 ---
 

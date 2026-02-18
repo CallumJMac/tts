@@ -130,6 +130,12 @@ def build_parser() -> argparse.ArgumentParser:
         action="store_true",
         help="Enable FlashAttention-2 (CUDA only).",
     )
+    parser.add_argument(
+        "--max-new-tokens",
+        type=int,
+        default=2048,
+        help="Max tokens for TTS generation (safety cap).",
+    )
     return parser
 
 
@@ -162,6 +168,7 @@ def _generate_single(
     ref_text: Optional[str],
     voice_clone_prompt=None,
     language: str = "English",
+    max_new_tokens: int = 2048,
 ) -> tuple[np.ndarray, int]:
     """Run a single TTS generation, returning (wav, sample_rate)."""
     import soundfile as sf
@@ -171,6 +178,7 @@ def _generate_single(
             text=target_text,
             language=language,
             voice_clone_prompt=voice_clone_prompt,
+            max_new_tokens=max_new_tokens,
         )
     else:
         wavs, sr = model.generate_voice_clone(
@@ -178,6 +186,7 @@ def _generate_single(
             language=language,
             ref_audio=ref_audio,
             ref_text=ref_text,
+            max_new_tokens=max_new_tokens,
         )
     return wavs[0], sr
 
@@ -495,6 +504,7 @@ def main() -> int:
                         ref_audio=ref.path,
                         ref_text=ref.text,
                         language=args.language,
+                        max_new_tokens=args.max_new_tokens,
                     )
 
                 elif approach == "concat_audio":
@@ -505,6 +515,7 @@ def main() -> int:
                         ref_audio=(combined.audio_array, combined.audio_sr),
                         ref_text=combined.text,
                         language=args.language,
+                        max_new_tokens=args.max_new_tokens,
                     )
 
                 elif approach == "concat_code":
@@ -516,6 +527,7 @@ def main() -> int:
                         ref_text=None,
                         voice_clone_prompt=combined.voice_clone_prompt,
                         language=args.language,
+                        max_new_tokens=args.max_new_tokens,
                     )
 
                 elif approach == "embed_avg":
@@ -527,6 +539,7 @@ def main() -> int:
                         ref_text=None,
                         voice_clone_prompt=combined.voice_clone_prompt,
                         language=args.language,
+                        max_new_tokens=args.max_new_tokens,
                     )
                 else:
                     print(f"  Unknown approach: {approach}, skipping")
