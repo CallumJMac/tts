@@ -46,6 +46,7 @@ pip install --no-cache-dir -q -r requirements.txt
 
 # --- Install flash-attn (CUDA only, needs torch already installed) ---
 echo "Installing flash-attn (this may take a few minutes)..."
+pip install --no-cache-dir -q wheel setuptools
 pip install --no-cache-dir flash-attn --no-build-isolation || {
     echo "WARNING: flash-attn failed to install. Continuing without it."
     echo "         (Remove --flash-attn from the run command below)"
@@ -60,7 +61,7 @@ print(f'PyTorch {torch.__version__}')
 print(f'CUDA available: {torch.cuda.is_available()}')
 if torch.cuda.is_available():
     print(f'GPU: {torch.cuda.get_device_name(0)}')
-    print(f'VRAM: {torch.cuda.get_device_properties(0).total_mem / 1e9:.1f} GB')
+    print(f'VRAM: {torch.cuda.get_device_properties(0).total_memory / 1e9:.1f} GB')
 "
 
 # --- Verify imports ---
