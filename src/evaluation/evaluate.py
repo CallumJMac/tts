@@ -8,7 +8,6 @@ import librosa
 import numpy as np
 import torch
 import whisper
-from discrete_speech_metrics import SpeechBERTScore
 from jiwer import cer, wer
 from transformers import Wav2Vec2FeatureExtractor, WavLMForXVector
 
@@ -200,6 +199,8 @@ def compute_speech_bert_score(
     use_gpu: bool,
 ) -> dict[str, float]:
     """SpeechBERTScore using WavLM-Large layer 14 features."""
+    from discrete_speech_metrics import SpeechBERTScore
+
     print("  Loading WavLM-Large for SpeechBERTScore (first run downloads ~1.2 GB) ...")
     metrics = SpeechBERTScore(
         sr=16000,
