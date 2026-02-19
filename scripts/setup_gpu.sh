@@ -44,13 +44,16 @@ pip install --no-cache-dir -q \
 echo "Installing project dependencies..."
 pip install --no-cache-dir -q -r requirements.txt
 
-# --- Install flash-attn (CUDA only, needs torch already installed) ---
-echo "Installing flash-attn (this may take a few minutes)..."
-pip install --no-cache-dir -q wheel setuptools
-pip install --no-cache-dir flash-attn --no-build-isolation || {
-    echo "WARNING: flash-attn failed to install. Continuing without it."
-    echo "         (Remove --flash-attn from the run command below)"
-}
+# --- flash-attn (optional, skip by default — compiling from source is slow/fragile) ---
+if [[ "${INSTALL_FLASH_ATTN:-0}" == "1" ]]; then
+    echo "Installing flash-attn (this may take 15-30 min)..."
+    pip install --no-cache-dir -q wheel setuptools
+    pip install --no-cache-dir flash-attn --no-build-isolation || {
+        echo "WARNING: flash-attn failed to install. Continuing without it."
+    }
+else
+    echo "Skipping flash-attn (set INSTALL_FLASH_ATTN=1 to enable)."
+fi
 
 # --- Verify CUDA works ---
 echo
@@ -98,7 +101,7 @@ python scripts/run_fewshot.py \
     --strategies random longest \
     --seeds 42 123 456 \
     --held-out-targets 5 \
-    --device cuda:0 --dtype float16 --flash-attn \
+    --device cuda:0 --dtype float16 \
     --skip-speechbertscore
 
 # Detach tmux: Ctrl-b then d
