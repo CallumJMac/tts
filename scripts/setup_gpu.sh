@@ -21,12 +21,18 @@ echo "GPU detected:"
 nvidia-smi --query-gpu=name,memory.total --format=csv,noheader
 echo
 
+# --- System deps ---
+echo "Installing system packages..."
+sudo apt-get update -qq
+sudo apt-get install -y -qq python3-venv python3-pip > /dev/null
+
 # --- Python venv ---
 PYTHON=${PYTHON:-python3}
 echo "Using: $($PYTHON --version)"
 echo "Creating virtual environment..."
 $PYTHON -m venv .venv
 source .venv/bin/activate
+pip install --upgrade pip -q
 
 # --- Install PyTorch with CUDA ---
 echo "Installing PyTorch (CUDA)..."
