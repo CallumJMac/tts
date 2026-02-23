@@ -1,14 +1,14 @@
 # Dynamic Few-Shot Examples for Qwen3-TTS Voice Cloning
 
 > **Living document** — single source of truth for experiment design, progress, and decisions.
-> Last updated: 2026-02-18
+> Last updated: 2026-02-23
 
 ---
 
 ## Target Venue
 
 **Interspeech 2026** — Sydney, Australia, Sep 27 – Oct 1
-- **Submission deadline: February 25, 2026 (AoE)** — 7 days from now
+- **Submission deadline: February 25, 2026 (AoE)**
 - Update deadline: March 4, 2026
 - Acceptance notification: June 5, 2026
 - Relevant tracks: Speech Synthesis, Resources and Evaluation, Generative AI for Speech
@@ -691,58 +691,202 @@ This is extremely cheap. Even with debugging time, setup, and re-runs, the total
 - [x] Validate: Docker image builds successfully (`docker build --platform linux/amd64 -t tts-fewshot .`)
 - [x] Add `--max-new-tokens` CLI flag and plumb through all generation call sites
 
-### Up Next: Deploy & Run Phase 3
+### Completed (2026-02-19) — Analysis Script & Phase 3 Deployment
 
-**Step 1: Validate Docker image**
+- [x] Built `scripts/analyze_fewshot.py` + `src/experiment/analyze.py` (~480 lines)
+  - Summary stats (mean ± std per config), per-speaker stats
+  - Significance tests (Wilcoxon / paired t-test, Bonferroni correction, Cohen's d)
+  - Publication-ready LaTeX table (bold best, arrows for metric direction)
+  - 5 plot types: speaker_sim bars, UTMOS bars, scaling curve, strategy heatmap, per-speaker breakdown
+  - Validated against Phase 2 results (embed_avg 5-ref longest = 0.9829 confirmed)
+- [x] Added `matplotlib>=3.9.0` to requirements.txt
+- [x] Relaxed version pins in requirements.txt for Python 3.10 compatibility (DLAMI ships 3.10)
+- [x] Made `discrete_speech_metrics` import lazy in `evaluate.py` (avoids ImportError on GPU instances)
+- [x] Created `scripts/launch_gpu.sh` — launches spot g5.xlarge with DLAMI, prompts for key/SG
+- [x] Created `scripts/setup_gpu.sh` — installs system deps, venv, PyTorch+CUDA, project deps, verifies GPU
+- [x] Deployed Phase 3 to AWS g5.xlarge spot instance (eu-west-1, $0.55/hr)
+
+#### Deployment Details
+
+- **Instance**: `i-0fdaf0782df238869`, spot g5.xlarge, NVIDIA A10G 24GB
+- **AMI**: Deep Learning Base OSS (Ubuntu 22.04) `ami-0f5404694649be37b`
+- **Region**: eu-west-1 (Ireland)
+- **Key pair**: `tts-phase3` (`~/.ssh/tts-phase3.pem`)
+- **Security group**: `sg-0955c6c807611d655` (tts-phase3-ssh, port 22)
+- **IAM role**: `tts-phase3-ec2` (S3 write to `tts-phase3-results` bucket)
+- **Dtype**: `bfloat16` (float16 caused CUDA device-side assert on A10G)
+- **flash-attn**: Skipped (compiling from source destabilized instance; not required)
+
+#### Deployment Issues Encountered & Fixed
+
+1. **Python 3.10 on DLAMI**: numpy>=2.3 requires 3.11+ → relaxed version pins
+2. **No python3-venv**: Added `apt-get install python3-venv` to setup script
+3. **flash-attn compile**: Consumed all CPU, made SSH unresponsive → skipped by default
+4. **float16 CUDA assert**: Model numerically unstable in fp16 on A10G → switched to bfloat16
+5. **discrete_speech_metrics top-level import**: Broke `--skip-speechbertscore` → made lazy
+6. **Manifest absolute paths**: Hardcoded `/Users/callumjmac/...` → sed-replaced to `/home/ubuntu/...`
+7. **Missing ffmpeg**: Whisper needs ffmpeg for audio loading → added to apt-get install
+8. **Python stdout buffering**: Logs appeared empty → added `python -u` for unbuffered output
+
+#### Phase 3 Run Status
+
+- **Experiment matrix**: 5 speakers × 5 targets × 3 seeds × 3 approaches × {1,2,3,5} refs × {random,longest} = **1275 runs**
+- **Approaches**: `single_baseline`, `embed_avg`, `concat_audio` (concat_code dropped)
+- **Rate**: ~15-20s per run (generation + eval) on A10G bfloat16
+- **Estimated duration**: 6-8 hours (~$4.40 total spot cost)
+- **Launched**: 2026-02-19 ~19:05 UTC
+- **Early results**: Run 1 produced UTMOS=4.38, SIM=0.9707, WER=0.1379 (consistent with Phase 2)
+
+#### Automated Completion
+
+A `finish.sh` script runs in the background on the instance:
+1. Polls every 60s until `run_fewshot.py` exits
+2. Runs `python scripts/analyze_fewshot.py` to generate stats + plots
+3. Uploads all results to `s3://tts-phase3-results/phase3/`
+4. Shuts down the instance (stops billing)
+
+**To retrieve results (morning of 2026-02-20):**
 ```bash
-docker run --platform linux/amd64 --rm tts-fewshot \
-    python3 -c "from src.experiment.run_fewshot import main; print('OK')"
+aws s3 sync s3://tts-phase3-results/phase3/ outputs/fewshot/phase3/ --region eu-west-1
 ```
 
-**Step 2: Launch g5.xlarge**
-- Use Deep Learning AMI (Ubuntu 22.04) with NVIDIA drivers pre-installed
-- Spot instance recommended (~$0.40/hr vs $1.00/hr on-demand)
-- 100 GB EBS volume sufficient
-
-**Step 3: Setup on instance (Option A — Docker)**
+**To terminate the stopped instance:**
 ```bash
-# Pull image from registry
-docker pull <registry>/tts-fewshot:latest
-# Run Phase 3
-docker run --gpus all -v /home/ubuntu/outputs:/app/outputs tts-fewshot
+aws ec2 terminate-instances --region eu-west-1 --instance-ids i-0fdaf0782df238869
 ```
 
-**Step 3 alt: Setup on instance (Option B — DLAMI + venv, recommended)**
+**To check progress (while running):**
 ```bash
-git clone <repo-url> && cd tts
-python3.12 -m venv .venv && source .venv/bin/activate
-pip install torch==2.10.0 torchaudio==2.10.0 --index-url https://download.pytorch.org/whl/cu126
-pip install flash-attn --no-build-isolation
-pip install -r requirements.txt
+ssh -i ~/.ssh/tts-phase3.pem ubuntu@108.129.92.201 "wc -l ~/tts/outputs/fewshot/results.csv && tail -5 ~/tts/phase3.log"
 ```
 
-**Step 4: Run Phase 3 experiment**
-```bash
-tmux new -s phase3
-python scripts/run_fewshot.py \
-    --approaches single_baseline embed_avg concat_audio \
-    --num-refs 1 2 3 5 \
-    --strategies random longest \
-    --seeds 42 123 456 \
-    --held-out-targets 5 \
-    --device cuda:0 --dtype float16 --flash-attn \
-    --skip-speechbertscore
-```
-Expected: ~225 runs, ~5s each on A10G = ~19 min compute, ~60 min with overhead.
+### Phase 3 Results (2026-02-20 morning)
 
-**Step 5: Retrieve and analyze results**
-- Pull `outputs/fewshot/results.csv` from instance
-- Run statistical analysis (mean +/- std per config, significance tests vs baseline)
-- Update PLAN.md with Phase 3 results
+**1275 runs completed: 5 speakers × 5 targets × 3 seeds × 3 approaches × {1,2,3,5} refs × {random,longest}**
 
-**Step 6: Paper decision**
-- If results hold across speakers/seeds: outline paper structure, target Interspeech 2026 (Feb 25 AoE)
-- If results are noisy: consider more seeds, additional metrics, or later venue (SLT 2026, SSW)
+Results retrieved from `s3://tts-phase3-results/phase3/` → `outputs/fewshot/phase3/`
+
+#### Summary Table (mean ± std across 75 observations per config)
+
+| Approach | n_refs | Strategy | UTMOS ↑ | Speaker Sim ↑ | WER ↓ |
+|----------|--------|----------|---------|---------------|-------|
+| **Single Baseline** | 1 | random | 4.425 ± 0.094 | 0.928 ± 0.044 | 15.3% ± 12.0% |
+| Concat Audio | 1 | longest | 4.390 ± 0.168 | 0.942 ± 0.039 | 22.3% ± 22.1% |
+| Concat Audio | 1 | random | 4.431 ± 0.119 | 0.926 ± 0.047 | 15.9% ± 12.7% |
+| Concat Audio | 2 | longest | 4.366 ± 0.392 | 0.947 ± 0.036 | 24.1% ± 73.6% |
+| Concat Audio | 2 | random | 4.432 ± 0.126 | 0.937 ± 0.042 | 14.4% ± 11.1% |
+| **Concat Audio** | **3** | **longest** | 4.416 ± 0.098 | **0.949 ± 0.038** | 21.3% ± 18.0% |
+| Concat Audio | 3 | random | 4.390 ± 0.379 | 0.941 ± 0.044 | 81.6% ± 555% |
+| Concat Audio | 5 | longest | 4.400 ± 0.143 | 0.948 ± 0.037 | 15.7% ± 13.0% |
+| Concat Audio | 5 | random | 4.385 ± 0.381 | 0.944 ± 0.044 | 39.7% ± 230% |
+| Embed Avg | 1 | longest | 4.470 ± 0.086 | 0.936 ± 0.037 | 13.4% ± 10.4% |
+| Embed Avg | 1 | random | 4.462 ± 0.082 | 0.921 ± 0.045 | 14.5% ± 11.6% |
+| Embed Avg | 2 | longest | 4.474 ± 0.087 | 0.934 ± 0.040 | 14.0% ± 10.8% |
+| Embed Avg | 2 | random | 4.473 ± 0.072 | 0.927 ± 0.042 | 13.8% ± 11.3% |
+| Embed Avg | 3 | longest | 4.469 ± 0.078 | 0.939 ± 0.037 | 15.0% ± 13.6% |
+| **Embed Avg** | **3** | **random** | **4.483 ± 0.055** | 0.930 ± 0.039 | 14.5% ± 11.0% |
+| Embed Avg | 5 | longest | 4.474 ± 0.054 | 0.938 ± 0.034 | 14.4% ± 11.9% |
+| Embed Avg | 5 | random | 4.463 ± 0.103 | 0.937 ± 0.035 | 14.1% ± 11.4% |
+
+#### Top 5 Configurations by Speaker Similarity
+
+| Rank | Approach | Config | Spk Sim | UTMOS | WER |
+|------|----------|--------|---------|-------|-----|
+| 1 | **Concat Audio** | 3-ref, longest | **0.949** ± 0.038 | 4.416 | 21.3% |
+| 2 | Concat Audio | 5-ref, longest | 0.948 ± 0.037 | 4.400 | 15.7% |
+| 3 | Concat Audio | 2-ref, longest | 0.947 ± 0.036 | 4.366 | 24.1% |
+| 4 | Concat Audio | 5-ref, random | 0.944 ± 0.044 | 4.385 | 39.7% |
+| 5 | Concat Audio | 1-ref, longest | 0.942 ± 0.039 | 4.390 | 22.3% |
+
+#### Statistical Significance (Wilcoxon signed-rank, Bonferroni-corrected, α=0.05)
+
+**Speaker Similarity — significant improvements over baseline (4 configs):**
+| Config | p_corrected | Cohen's d | Interpretation |
+|--------|-------------|-----------|----------------|
+| concat_audio 2-ref longest | 0.0024 | 0.51 | Medium |
+| concat_audio 3-ref longest | 0.0001 | 0.60 | Medium-large |
+| concat_audio 5-ref longest | <0.0001 | 0.62 | Medium-large |
+| concat_audio 5-ref random | 0.0022 | 0.38 | Small-medium |
+
+**embed_avg: NO significant speaker_sim improvement** at any config (all p_corrected > 0.05).
+
+**UTMOS — significant improvements over baseline (8 configs, all embed_avg):**
+| Config | p_corrected | Cohen's d |
+|--------|-------------|-----------|
+| embed_avg 1-ref longest | 0.0003 | 0.43 |
+| embed_avg 1-ref random | 0.0040 | 0.36 |
+| embed_avg 2-ref longest | <0.0001 | 0.46 |
+| embed_avg 2-ref random | 0.0001 | 0.50 |
+| embed_avg 3-ref longest | 0.0001 | 0.45 |
+| embed_avg 3-ref random | <0.0001 | 0.61 |
+| embed_avg 5-ref longest | 0.0004 | 0.55 |
+| embed_avg 5-ref random | 0.0003 | 0.32 |
+
+**WER — no significant changes** for any config after Bonferroni correction.
+
+#### Key Findings
+
+**1. Concat Audio + longest is the speaker similarity winner.**
+- +0.02 over baseline (0.949 vs 0.928), statistically significant (p<0.0001, d=0.6)
+- Scales clearly with more refs: 1→2→3 refs shows monotonic improvement, plateaus at 3-5
+- `longest` strategy critical — random is consistently worse
+
+**2. Embed Avg wins naturalness (UTMOS) but NOT speaker similarity.**
+- UTMOS ~4.47 vs 4.42 baseline — small (+0.05) but significant across all configs
+- Speaker similarity is NOT significantly improved at any config (contradicts Phase 2)
+- Lowest variance across configs — very stable approach
+
+**3. Phase 2 conclusion was speaker-specific.**
+- Phase 2 (speaker 1188 only): embed_avg appeared dominant (SIM=0.983)
+- Phase 3 (5 speakers): embed_avg SIM advantage disappears, concat_audio takes over
+- This validates why multi-speaker testing was essential
+
+**4. `longest` strategy strongly favours concat_audio.**
+- Concat Audio longest: SIM ≈ 0.942–0.949
+- Concat Audio random: SIM ≈ 0.926–0.944
+- The longer the reference clips, the more acoustic signal for in-context learning
+
+**5. Concat Audio has WER instability.**
+- 3-ref random: 81.6% ± 555% — some degenerate generations
+- 5-ref random: 39.7% ± 230% — same issue at smaller scale
+- Likely context overflow causing garbled output on some runs
+- `longest` strategy is much more stable (WER 15-24%)
+
+**6. Embed Avg is the "safe" approach.**
+- Never significantly hurts any metric vs baseline
+- Lowest WER variance (±10-14%)
+- Best UTMOS (naturalness)
+- Moderate SIM improvement (not significant after correction)
+
+#### Hypothesis Validation (Phase 3)
+
+| Hypothesis | Phase 2 Result | Phase 3 Result | Notes |
+|-----------|---------------|----------------|-------|
+| concat_audio improves speaker sim | Confirmed | **Confirmed (significant)** | d=0.6, best with longest |
+| embed_avg improves sim + naturalness | Confirmed (both) | **Partially: UTMOS yes, SIM no** | SIM advantage was speaker-specific |
+| longest > random for speaker sim | Confirmed | **Confirmed** | Critical for concat_audio |
+| More refs → better (up to 3-5) | Partially | **Confirmed for concat_audio** | Plateaus at 3 refs |
+| embed_avg dominates overall | Phase 2: yes | **Phase 3: no** | concat_audio wins SIM |
+
+#### Recommended Approach for Paper
+
+The paper story is a **trade-off between two axes**:
+- **Concat Audio (longest, 3-5 refs)**: Best speaker similarity (+0.02, p<0.0001), but higher WER variance
+- **Embed Avg**: Best naturalness (+0.05 UTMOS, p<0.0001), stable WER, but no significant SIM gain
+
+This is a more nuanced and honest result than "one approach dominates" — and arguably more interesting for a paper.
+
+### Up Next: Write Paper
+
+**Decision: Proceed with Interspeech 2026 (deadline Feb 25 AoE)**
+
+The results are statistically significant, consistent across speakers, and tell a clear story about the trade-off between speaker fidelity and naturalness in few-shot voice cloning.
+
+**Immediate tasks:**
+1. [ ] Listen to best/worst outputs — verify metrics match human perception
+2. [ ] Investigate WER outliers (concat_audio 3-ref random, 81.6% mean)
+3. [ ] Draft paper outline: intro, method (3 approaches), experiment, results, discussion
+4. [ ] Generate camera-ready figures from analysis plots
 
 ---
 

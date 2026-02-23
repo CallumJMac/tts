@@ -85,6 +85,12 @@ def build_parser() -> argparse.ArgumentParser:
         help="Total held-out clips per speaker in the split.",
     )
     parser.add_argument(
+        "--held-out-seed",
+        type=int,
+        default=0,
+        help="Random seed for held-out split construction.",
+    )
+    parser.add_argument(
         "--output-dir",
         default="outputs/fewshot",
         help="Base output directory.",
@@ -375,6 +381,7 @@ def main() -> int:
     pools = build_speaker_pools(
         args.manifest,
         held_out_per_speaker=args.held_out_per_speaker,
+        held_out_seed=args.held_out_seed,
     )
 
     speaker_ids = args.speakers or sorted(pools.keys())
