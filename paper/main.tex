@@ -1,11 +1,9 @@
-\documentclass[10pt,a4paper,twocolumn]{article}
-\usepackage{interspeech2026}
+\documentclass{Interspeech}
 \usepackage{amsmath,amssymb}
 \usepackage{graphicx}
 \usepackage{booktabs}
 \usepackage{multirow}
 \usepackage{url}
-\usepackage[hidelinks]{hyperref}
 \usepackage{cite}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc}
@@ -13,9 +11,8 @@
 \title{Multi-Reference Voice Cloning for Qwen3-TTS:\\
 A Trade-Off Between Speaker Fidelity and Naturalness}
 
-% Double-blind: no author information
-\name{}
-\address{}
+% Review mode (double-blind) is the default for Interspeech.cls.
+\keywords{voice cloning, text-to-speech, speaker similarity, few-shot learning, multi-reference}
 
 \begin{document}
 \maketitle
@@ -32,8 +29,6 @@ Neither approach dominates both axes, revealing a Pareto trade-off.
 Selecting the longest available references consistently outperforms random selection.
 A pilot perceptual evaluation suggests that automated speaker similarity metrics may not fully capture human voice identity judgments.
 \end{abstract}
-
-\noindent\textbf{Index Terms:} voice cloning, text-to-speech, speaker similarity, few-shot learning, multi-reference
 
 %----------------------------------------------------------------------
 \section{Introduction}
@@ -271,6 +266,7 @@ No configuration dominates both axes, confirming the Pareto trade-off and motiva
   \centering
   \includegraphics[width=\columnwidth]{figures/pareto_tradeoff}
   \caption{Pareto trade-off between speaker similarity and naturalness across all configurations.
+  Points show per-configuration means with $\pm$1~SD error bars; color encodes approach, marker shape encodes selection strategy, and marker size encodes number of references.
   \textsc{Concat}+longest maximises SIM, while \textsc{embed} maximises UTMOS.}
   \label{fig:scaling}
 \end{figure}
@@ -289,7 +285,8 @@ For \textsc{embed}, the impact of selection strategy is smaller and inconsistent
   \centering
   \includegraphics[width=\columnwidth]{figures/stability_fail_rate}
   \caption{Stability analysis using catastrophic failure rate (WER$>50\%$).
-  Failures are concentrated in \textsc{concat}+random settings, while \textsc{embed} remains stable.}
+  Only configurations with non-zero failure rates are shown.
+  Failures occur only in \textsc{concat} settings, while \textsc{embed} remains stable.}
   \label{fig:strategy}
 \end{figure}
 
