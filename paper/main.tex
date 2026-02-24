@@ -139,6 +139,7 @@ This aims to capture a more stable speaker representation by averaging out utter
 
 \textbf{Model.}
 We use Qwen3-TTS-12Hz-0.6B-Base~\cite{qwen3tts} in bfloat16 precision on an NVIDIA A10G GPU (24\,GB VRAM).
+To validate that conclusions are not idiosyncratic to this model size, we additionally repeat the experiment on Qwen3-TTS-12Hz-1.7B-Base (Section~\ref{sec:scale}).
 
 \textbf{Dataset.}
 Evaluation uses LibriTTS-R~\cite{libritts_r}, a restored version of LibriTTS~\cite{libritts}, at 24\,kHz.
@@ -225,7 +226,9 @@ The strongest effect is \textsc{embed} with 3 random references ($p < 10^{-7}$, 
 No configuration produces a statistically significant change in WER after correction.
 Whisper calibration on the 25 ground-truth target audios yields $\mathrm{WER}_{\text{GT}}=14.3\%$ median (IQR: $6.5$--$22.2\%$), indicating substantial ASR floor error unrelated to synthesis quality.
 Accordingly, we interpret WER deltas conservatively and focus on catastrophic-failure rates.
-\textsc{Concat} with random selection at $n{\geq}3$ shows the clearest instability: failure rate (WER$>50\%$) of $2.7\%$ at $n{=}3$ and $1.3\%$ at $n{=}5$, with rare extreme outliers inflating means.
+\textsc{Embed} exhibits 0\% failures under this threshold across all tested configurations.
+\textsc{Concat} is less stable, with failures across several settings (0--8\%) and the highest failure rate at $n{=}3$ with the longest strategy.
+Random selection at $n{=}3$ additionally produces rare extreme outliers, inflating mean and variance (Table~\ref{tab:main}).
 By contrast, \textsc{embed} has 0\% failures under this threshold across all tested configurations.
 
 \begin{table}[t]
@@ -273,8 +276,8 @@ No configuration dominates both axes, confirming the Pareto trade-off and motiva
 \label{sec:strategy}
 
 Figure~\ref{fig:strategy} shows stability through catastrophic-failure rates.
-The instability risk is concentrated in \textsc{concat} with random selection, particularly at larger reference counts.
-For \textsc{concat}, selecting longer references improves both fidelity and robustness.
+The instability risk is specific to \textsc{concat} configurations.
+Random selection exhibits the heaviest tail (Table~\ref{tab:main}), while the highest outlier rate under WER$>50\%$ occurs for \textsc{concat}+longest at $n{=}3$.
 
 For \textsc{embed}, the impact of selection strategy is smaller and inconsistent, aligning with the interpretation that embedding extraction is less sensitive to utterance duration than in-context processing.
 
@@ -292,6 +295,14 @@ For \textsc{embed}, the impact of selection strategy is smaller and inconsistent
 The fidelity--naturalness trade-off is consistent across all 5~speakers, though magnitude varies.
 Notably, preliminary single-speaker experiments on one speaker initially suggested \textsc{embed} dominance across both metrics---a finding that did not generalise to the full 5-speaker evaluation.
 This highlights the importance of multi-speaker testing for drawing reliable conclusions about voice cloning strategies.
+
+\subsection{Model scale validation}
+\label{sec:scale}
+
+To test whether the Pareto trade-off persists with model scale, we repeat the full experiment on Qwen3-TTS-1.7B.
+Results are qualitatively consistent.
+\textsc{Concat}+longest improves speaker similarity (0.932\,$\rightarrow$\,0.948 at $n{=}3$, $p_\text{corr}{=}5.0{\times}10^{-4}$, $d{=}0.57$), while \textsc{embed}+random improves naturalness (4.453\,$\rightarrow$\,4.491 at $n{=}3$, $p_\text{corr}{=}6.5{\times}10^{-7}$, $d{=}0.60$).
+This suggests the trade-off is robust within the Qwen3-TTS family across at least two model sizes.
 
 \subsection{Pilot perceptual evaluation}
 \label{sec:perceptual}
@@ -321,7 +332,7 @@ If automated SIM diverges from human perception, reported improvements in the li
 Formal listening tests with crowdsourced evaluators are needed to assess this.
 
 \textbf{Limitations.}
-We evaluate a single TTS architecture (Qwen3-TTS~0.6B) on a single dataset (LibriTTS-R) in English only.
+We evaluate one TTS architecture family (Qwen3-TTS) at two model sizes (0.6B and 1.7B) on a single dataset (LibriTTS-R) in English only.
 Generalisability to other models (e.g., VALL-E~\cite{valle}, CosyVoice~\cite{cosyvoice}), languages, and acoustic conditions remains to be established.
 The perceptual evaluation is preliminary ($n{=}1$) and requires validation with a statistically powered listener panel.
 
