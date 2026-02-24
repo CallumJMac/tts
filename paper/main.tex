@@ -164,6 +164,7 @@ Because ASR error is non-negligible on ground-truth LibriTTS-R audio, we treat W
 
 \textbf{Statistical testing.}
 All comparisons use paired Wilcoxon signed-rank tests with Bonferroni correction ($\alpha = 0.05$, 48~comparisons).
+We choose this non-parametric paired test because metric deltas can be heavy-tailed (especially WER), and apply Bonferroni to control family-wise error across configurations.
 Effect sizes are reported as Cohen's $d$~\cite{cohen1988}.
 
 %----------------------------------------------------------------------
@@ -229,7 +230,6 @@ Accordingly, we interpret WER deltas conservatively and focus on catastrophic-fa
 \textsc{Embed} exhibits 0\% failures under this threshold across all tested configurations.
 \textsc{Concat} is less stable, with failures across several settings (0--8\%) and the highest failure rate at $n{=}3$ with the longest strategy.
 Random selection at $n{=}3$ additionally produces rare extreme outliers, inflating mean and variance (Table~\ref{tab:main}).
-By contrast, \textsc{embed} has 0\% failures under this threshold across all tested configurations.
 
 \begin{table}[t]
 \centering
