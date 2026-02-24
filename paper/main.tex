@@ -276,7 +276,7 @@ No configuration dominates both axes, confirming the Pareto trade-off and motiva
 
 Figure~\ref{fig:strategy} shows stability through catastrophic-failure rates.
 The instability risk is specific to \textsc{concat} configurations.
-Random selection exhibits the heaviest tail (Table~\ref{tab:main}), while the highest outlier rate under WER$>50\%$ occurs for \textsc{concat}+longest at $n{=}3$.
+The highest failure rate under WER$>50\%$ occurs for \textsc{concat}+longest at $n{=}3$, while random selection exhibits the heaviest tail (Table~\ref{tab:main}).
 These failures also manifest as latency spikes: on 0.6B, synthesis time (median/p95/max) is 8.2/31.9/40.1\,s (baseline), 8.0/37.4/41.9\,s (\textsc{concat}+longest, $n{=}3$), and 8.9/35.2/36.3\,s (\textsc{embed}+random, $n{=}3$), while \textsc{concat}+random at $n{=}3$ reaches 297.8\,s in the worst case.
 
 For \textsc{embed}, the impact of selection strategy is smaller and inconsistent, aligning with the interpretation that embedding extraction is less sensitive to utterance duration than in-context processing.
@@ -286,7 +286,7 @@ For \textsc{embed}, the impact of selection strategy is smaller and inconsistent
   \includegraphics[width=\columnwidth]{figures/stability_fail_rate}
   \caption{Stability analysis using catastrophic failure rate (WER$>50\%$).
   Only configurations with non-zero failure rates are shown.
-  Failures occur only in \textsc{concat} settings, while \textsc{embed} remains stable.}
+  Failures occur only in \textsc{concat} settings: the highest failure rate is \textsc{concat}+longest at $n{=}3$, while \textsc{concat}+random exhibits rarer but more extreme outliers.}
   \label{fig:strategy}
 \end{figure}
 
