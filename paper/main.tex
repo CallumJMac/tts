@@ -162,6 +162,9 @@ Predicted mean opinion score from the UTMOS model~\cite{utmos}, an automated pro
 Whisper-turbo~\cite{whisper} transcription of synthesised audio compared to target text.
 Because ASR error is non-negligible on ground-truth LibriTTS-R audio, we treat WER primarily as a stability proxy and report calibrated interpretation in Section~\ref{sec:significance}.
 
+\textbf{Latency.}
+Wall-clock synthesis time per utterance (excluding evaluation), recorded as \texttt{tts\_time\_s}.
+
 \textbf{Statistical testing.}
 All comparisons use paired Wilcoxon signed-rank tests with Bonferroni correction ($\alpha = 0.05$, 48~comparisons).
 We choose this non-parametric paired test because metric deltas can be heavy-tailed (especially WER), and apply Bonferroni to control family-wise error across configurations.
@@ -278,6 +281,7 @@ No configuration dominates both axes, confirming the Pareto trade-off and motiva
 Figure~\ref{fig:strategy} shows stability through catastrophic-failure rates.
 The instability risk is specific to \textsc{concat} configurations.
 Random selection exhibits the heaviest tail (Table~\ref{tab:main}), while the highest outlier rate under WER$>50\%$ occurs for \textsc{concat}+longest at $n{=}3$.
+These failures also manifest as latency spikes: on 0.6B, median synthesis time is 8.2\,s (baseline), 8.0\,s (\textsc{concat}+longest, $n{=}3$), and 8.9\,s (\textsc{embed}+random, $n{=}3$), but \textsc{concat}+random reaches 298\,s in the worst case.
 
 For \textsc{embed}, the impact of selection strategy is smaller and inconsistent, aligning with the interpretation that embedding extraction is less sensitive to utterance duration than in-context processing.
 
