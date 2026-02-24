@@ -364,24 +364,116 @@ def _save_plot(fig: plt.Figure, output_dir: Path, name: str, formats: list[str])
 
 def plot_pareto_tradeoff(df: pd.DataFrame, output_dir: Path, formats: list[str]) -> None:
     summary = compute_summary_stats(df)
-    fig, ax = plt.subplots(figsize=(7.4, 5.4))
+    fig, ax = plt.subplots(figsize=(6.4, 4.3))
+
+    # Encode configuration metadata visually so we don't need unreadable per-point labels.
+    size_map = {1: 26, 2: 34, 3: 44, 5: 62}
 
     for _, row in summary.iterrows():
         approach = row["approach"]
         strategy = row["strategy"]
+        n_refs = int(row["n_refs"])
         color = APPROACH_COLORS.get(approach, "#777777")
         marker = STRATEGY_MARKERS.get(strategy, "o")
         x = row["speaker_sim_mean"]
         y = row["utmos_mean"]
         xerr = row["speaker_sim_std"]
         yerr = row["utmos_std"]
-        ax.errorbar(x, y, xerr=xerr, yerr=yerr, fmt=marker, color=color, ms=7, capsize=2, alpha=0.9)
-        ax.annotate(f"{APPROACH_LABELS.get(approach, approach)}\n{strategy}, n={int(row['n_refs'])}", (x, y), textcoords="offset points", xytext=(4, 4), fontsize=7)
+
+        ax.errorbar(
+            x,
+            y,
+            xerr=xerr,
+            yerr=yerr,
+            fmt="none",
+            ecolor=color,
+            elinewidth=0.9,
+            capsize=1.5,
+            alpha=0.35,
+            zorder=1,
+        )
+        ax.scatter(
+            [x],
+            [y],
+            s=size_map.get(n_refs, 40),
+            marker=marker,
+            c=color,
+            edgecolors="white",
+            linewidths=0.6,
+            alpha=0.95,
+            zorder=2,
+        )
+
+    # Annotate only the key reference points.
+    baseline = summary[(summary["approach"] == "single_baseline")].head(1)
+    if not baseline.empty:
+        bx, by = float(baseline["speaker_sim_mean"].iloc[0]), float(baseline["utmos_mean"].iloc[0])
+        ax.scatter([bx], [by], s=80, marker="D", c=APPROACH_COLORS["single_baseline"], edgecolors="black", linewidths=0.7, zorder=3)
+        ax.annotate("Baseline", (bx, by), textcoords="offset points", xytext=(6, -10), fontsize=8)
+
+    best_sim = summary.loc[summary["speaker_sim_mean"].idxmax()]
+    ax.scatter(
+        [best_sim["speaker_sim_mean"]],
+        [best_sim["utmos_mean"]],
+        s=110,
+        marker="o",
+        facecolors="none",
+        edgecolors="black",
+        linewidths=1.0,
+        zorder=4,
+    )
+    ax.annotate(
+        "Best SIM",
+        (best_sim["speaker_sim_mean"], best_sim["utmos_mean"]),
+        textcoords="offset points",
+        xytext=(6, 8),
+        fontsize=8,
+    )
+
+    best_utmos = summary.loc[summary["utmos_mean"].idxmax()]
+    ax.scatter(
+        [best_utmos["speaker_sim_mean"]],
+        [best_utmos["utmos_mean"]],
+        s=110,
+        marker="o",
+        facecolors="none",
+        edgecolors="black",
+        linewidths=1.0,
+        zorder=4,
+    )
+    ax.annotate(
+        "Best UTMOS",
+        (best_utmos["speaker_sim_mean"], best_utmos["utmos_mean"]),
+        textcoords="offset points",
+        xytext=(6, 8),
+        fontsize=8,
+    )
+
+    # Legend: approach (color), strategy (marker), n_refs (size).
+    from matplotlib.lines import Line2D
+    from matplotlib.patches import Patch
+
+    approach_handles = [
+        Patch(facecolor=APPROACH_COLORS[a], edgecolor="none", label=APPROACH_LABELS.get(a, a))
+        for a in APPROACH_ORDER
+        if a in set(summary["approach"].unique())
+    ]
+    strategy_handles = [
+        Line2D([0], [0], marker=STRATEGY_MARKERS[s], color="black", linestyle="none", markersize=6, label=s)
+        for s in ["random", "longest"]
+        if s in set(summary["strategy"].unique())
+    ]
+    size_handles = [
+        Line2D([0], [0], marker="o", color="black", linestyle="none", markersize=np.sqrt(size_map[n]) * 0.55, label=f"n={n}")
+        for n in sorted(set(int(v) for v in summary["n_refs"].unique()))
+        if n in size_map
+    ]
+    handles = approach_handles + strategy_handles + size_handles
+    ax.legend(handles=handles, loc="lower left", frameon=True, framealpha=0.9, fontsize=7)
 
     ax.set_xlabel("Speaker Similarity")
     ax.set_ylabel("UTMOS")
-    ax.set_title("Pareto Trade-off: Speaker Similarity vs Naturalness")
-    ax.grid(alpha=0.25)
+    ax.grid(alpha=0.22, linewidth=0.6)
     _save_plot(fig, output_dir, "pareto_tradeoff", formats)
 
 
@@ -389,20 +481,43 @@ def plot_stability_fail_rate(summary: pd.DataFrame, output_dir: Path, formats: l
     col = f"failure_rate_wer_gt_{str(threshold).replace('.', '_')}"
     if col not in summary.columns:
         return
-    plot_df = summary.copy().sort_values(col, ascending=False)
-    labels = [f"{APPROACH_LABELS.get(a,a)}\n{s},n={int(n)}" for a, s, n in zip(plot_df["approach"], plot_df["strategy"], plot_df["n_refs"])]
-    values = (plot_df[col] * 100.0).fillna(0.0).values
-    colors = [APPROACH_COLORS.get(a, "#777777") for a in plot_df["approach"]]
+    plot_df = summary.copy()
+    plot_df[col] = (plot_df[col] * 100.0).fillna(0.0)
+    nonzero = plot_df[plot_df[col] > 0].sort_values(col, ascending=True).copy()
 
-    fig, ax = plt.subplots(figsize=(10.5, 5.4))
-    ax.bar(np.arange(len(values)), values, color=colors, alpha=0.9)
-    ax.set_xticks(np.arange(len(values)))
-    ax.set_xticklabels(labels, rotation=45, ha="right", fontsize=8)
-    ax.set_ylabel(f"Failure Rate (WER > {threshold}) [%]")
-    ax.set_title("Stability by Configuration")
-    ax.grid(axis="y", alpha=0.25)
-    fig.tight_layout()
-    _save_plot(fig, output_dir, "stability_fail_rate", formats)
+    # Compact label formatting for readability at column width.
+    def _label(row: pd.Series) -> str:
+        a = row["approach"]
+        s = row["strategy"]
+        n = int(row["n_refs"])
+        if a == "single_baseline":
+            return "baseline"
+        a_short = {"concat_audio": "concat", "embed_avg": "embed"}.get(a, a)
+        s_short = {"random": "rand", "longest": "long"}.get(s, s)
+        return f"{a_short}/{s_short}/n={n}"
+
+    labels = [_label(r) for _, r in nonzero.iterrows()]
+    values = nonzero[col].values
+    colors = [APPROACH_COLORS.get(a, "#777777") for a in nonzero["approach"]]
+
+    height = max(2.2, 0.35 * len(values) + 1.2)
+    fig, ax = plt.subplots(figsize=(6.6, height))
+    y = np.arange(len(values))
+    ax.barh(y, values, color=colors, alpha=0.9)
+    ax.set_yticks(y)
+    ax.set_yticklabels(labels, fontsize=8)
+    ax.set_xlabel(f"Failure rate (WER > {threshold}) [%]")
+    ax.grid(axis="x", alpha=0.22, linewidth=0.6)
+
+    # Value labels
+    for yi, v in zip(y, values):
+        ax.text(v + 0.15, yi, f"{v:.1f}%", va="center", fontsize=8)
+
+    ax.set_xlim(0, max(1.0, float(np.max(values)) * 1.15))
+    ax.set_title("Stability (Non-Zero Failure Rates)")
+
+    name = "stability_fail_rate" if abs(threshold - 0.5) < 1e-9 else f"stability_fail_rate_wer_gt_{str(threshold).replace('.', '_')}"
+    _save_plot(fig, output_dir, name, formats)
 
 
 def plot_speaker_sim_by_approach(df: pd.DataFrame, output_dir: Path, formats: list[str]) -> None:
