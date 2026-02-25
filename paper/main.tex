@@ -149,6 +149,7 @@ This yields $5 \times 5 \times 3 \times 17 = 1{,}275$ synthesis runs (1~baseline
 
 \textbf{Speaker similarity (SIM).}
 Cosine similarity between WavLM-based speaker embeddings~\cite{wavlm} of synthesised and ground-truth speech, using the \texttt{wavlm-base-plus-sv} model.
+We use an external speaker verification model rather than Qwen3-TTS's internal speaker encoder to avoid biasing SIM in favour of the embedding-averaging approach.
 
 \textbf{Naturalness (UTMOS).}
 Predicted mean opinion score from the UTMOS model~\cite{utmos}, an automated proxy for human naturalness judgments.
@@ -262,13 +263,26 @@ Figure~\ref{fig:scaling} visualises the main result directly in SIM--UTMOS space
 \textsc{Concat}+longest occupies the high-SIM frontier (peak SIM at $n{=}3$), while \textsc{embed} occupies the high-UTMOS frontier (peak UTMOS at $n{=}3$, random).
 No configuration dominates both axes, confirming the Pareto trade-off and motivating task-specific operating-point selection.
 
-\begin{figure}[t]
+\begin{figure*}[t]
   \centering
-  \includegraphics[width=\columnwidth]{figures/pareto_tradeoff}
+  \includegraphics[width=\textwidth]{figures/pareto_tradeoff}
   \caption{Pareto trade-off between speaker similarity and naturalness across all configurations.
   Points show per-configuration means with $\pm$1~SD error bars; color encodes approach, marker shape encodes selection strategy, and marker size encodes number of references.
   \textsc{Concat}+longest maximises SIM, while \textsc{embed} maximises UTMOS.}
   \label{fig:scaling}
+\end{figure*}
+
+\subsection{Scaling with number of references}
+\label{sec:scaling_curve}
+
+Figure~\ref{fig:scaling_curve} shows average performance as the number of references increases.
+Both approaches exhibit diminishing returns beyond $n{=}3$, supporting the practical guideline that reference quality and selection strategy matter more than adding additional short references.
+
+\begin{figure}[t]
+  \centering
+  \includegraphics[width=\columnwidth]{figures/scaling_curve}
+  \caption{Scaling with reference count. Both SIM and UTMOS improvements plateau beyond $n{=}3$ for the tested strategies.}
+  \label{fig:scaling_curve}
 \end{figure}
 
 \subsection{Reference selection strategy}
@@ -305,13 +319,14 @@ Results are qualitatively consistent.
 \textsc{Concat}+longest improves speaker similarity (0.932\,$\rightarrow$\,0.948 at $n{=}3$, $p_\text{corr}{=}5.0{\times}10^{-4}$, $d{=}0.57$), while \textsc{embed}+random improves naturalness (4.453\,$\rightarrow$\,4.491 at $n{=}3$, $p_\text{corr}{=}6.5{\times}10^{-7}$, $d{=}0.60$).
 This suggests the trade-off is robust within the Qwen3-TTS family across at least two model sizes.
 
-\subsection{Pilot perceptual evaluation}
+\subsection{Exploratory perceptual probe (qualitative)}
 \label{sec:perceptual}
 
-A pilot blind evaluation (1~listener, 4~paired comparisons) revealed a potential metric--perception divergence.
-The listener consistently preferred \textsc{concat} for voice identity but \textsc{embed} for naturalness---aligning with automated metrics on the naturalness axis.
-However, in a case where the SIM metric rated \textsc{embed} higher (0.983 vs.\ 0.976), the listener judged \textsc{concat} as the better voice match.
-This suggests that cosine similarity in WavLM embedding space may not fully capture perceptual voice identity, warranting investigation with larger listener panels.
+A small exploratory blind comparison (1~listener, 4~paired comparisons) was conducted to qualitatively probe alignment between automated metrics and human perception.
+The listener preferred \textsc{concat} for speaker identity and \textsc{embed} for naturalness, broadly aligning with automated results on the naturalness axis.
+However, in one case where the SIM metric favoured \textsc{embed} (0.983 vs.\ 0.976), the listener judged \textsc{concat} as the better voice match.
+While far too limited for statistical inference, this observation suggests that cosine similarity in WavLM embedding space may not fully capture perceptual voice identity.
+A statistically powered listener study is required to assess perceptual significance.
 
 %----------------------------------------------------------------------
 \section{Discussion and Conclusion}
@@ -322,20 +337,21 @@ We have presented a systematic comparison of two multi-reference voice cloning s
 Our central finding is a Pareto trade-off: audio concatenation optimises speaker fidelity ($d$ up to $0.62$), while embedding averaging optimises naturalness ($d$ up to $0.61$), with neither dominating both objectives.
 
 This trade-off has practical implications.
-For applications prioritising speaker fidelity---audiobook narration, voice preservation---\textsc{concat} with longest references at $n{=}3$ is preferred.
+For applications prioritising speaker fidelity---as reflected by SIM---\textsc{concat} with longest references at $n{=}3$ may be preferred.
 For applications prioritising naturalness---virtual assistants, accessibility tools---\textsc{embed} offers more natural output with stable performance regardless of reference count or selection strategy.
 
 Our scaling analysis reveals that reference selection strategy (longest vs.\ random) matters more than the number of references beyond~3.
 Practitioners should prioritise high-quality, longer reference utterances over accumulating additional references.
 
 The pilot perceptual evaluation raises important questions about the validity of embedding-cosine speaker similarity as an evaluation metric.
-If automated SIM diverges from human perception, reported improvements in the literature may not translate to perceived quality gains.
+If automated SIM diverges from human perception, improvements measured in embedding space may not directly translate to perceived quality gains.
 Formal listening tests with crowdsourced evaluators are needed to assess this.
 
 \textbf{Limitations.}
 We evaluate one TTS architecture family (Qwen3-TTS) at two model sizes (0.6B and 1.7B) on a single dataset (LibriTTS-R) in English only.
 Generalisability to other models (e.g., VALL-E~\cite{valle}, CosyVoice~\cite{cosyvoice}), languages, and acoustic conditions remains to be established.
 The perceptual evaluation is preliminary ($n{=}1$) and requires validation with a statistically powered listener panel.
+The perceptual probe is qualitative only and does not permit statistical conclusions about listener preference or perceptual effect size.
 
 \textbf{Future work.}
 We plan to extend this comparison to additional TTS architectures and model sizes, conduct crowdsourced MOS and speaker similarity evaluations, explore hybrid strategies combining both approaches, and investigate cross-lingual multi-reference cloning.
