@@ -18,16 +18,7 @@ A Trade-Off Between Speaker Fidelity and Naturalness}
 \maketitle
 
 \begin{abstract}
-Zero-shot voice cloning typically uses a single reference utterance to characterise a target speaker.
-When multiple references are available, it is unclear how best to combine them.
-We systematically compare two multi-reference strategies for Qwen3-TTS:
-(1)~audio concatenation, which provides multiple audio--text pairs as in-context examples, and
-(2)~embedding averaging, which averages speaker embeddings extracted from each reference.
-In a controlled experiment of 1{,}275 runs---5 speakers $\times$ 5 targets $\times$ 3 seeds $\times$ 17 configurations on LibriTTS-R---we find a statistically significant trade-off:
-audio concatenation improves speaker similarity (SIM~$+0.02$, $p<0.001$, $d$ up to $0.62$) while embedding averaging improves naturalness (UTMOS~$+0.06$, $p<10^{-7}$, $d$ up to $0.61$).
-Neither approach dominates both axes, revealing a Pareto trade-off.
-Selecting the longest available references consistently outperforms random selection.
-A pilot perceptual evaluation suggests that automated speaker similarity metrics may not fully capture human voice identity judgments.
+Zero-shot voice cloning typically uses a single reference utterance to characterize a target speaker. When multiple references are available, it is unclear how best to combine them. We systematically compare two multi-reference strategies for Qwen3-TTS: (1) audio concatenation, which provides multiple audio-text pairs as in-context examples, and (2) embedding averaging, which averages speaker embeddings extracted from each reference. In a controlled experiment of 1,275 runs (5 speakers x 5 targets x 3 seeds x 17 configurations) on LibriTTS-R, we observe a statistically significant trade-off: audio concatenation improves speaker similarity (SIM +0.02, p < 0.001, d up to 0.62) while embedding averaging improves naturalness (UTMOS +0.06, p < 1e-7, d up to 0.61). Neither approach dominates both axes, revealing a Pareto trade-off. An exploratory perceptual probe highlights potential divergence between embedding-based similarity and perceived voice identity.
 \end{abstract}
 
 %----------------------------------------------------------------------
@@ -164,7 +155,7 @@ Wall-clock synthesis time per utterance (excluding evaluation), including refere
 \textbf{Statistical testing.}
 All comparisons use paired Wilcoxon signed-rank tests with Bonferroni correction ($\alpha = 0.05$, 48~comparisons).
 We choose this non-parametric paired test because metric deltas can be heavy-tailed (especially WER), and apply Bonferroni to control family-wise error across configurations.
-Effect sizes are reported as Cohen's $d$~\cite{cohen1988}.
+Effect sizes are reported as paired Cohen's $d_z$ computed on paired differences~\cite{cohen1988}.
 
 %----------------------------------------------------------------------
 \section{Results}
@@ -339,9 +330,10 @@ Our central finding is a Pareto trade-off: audio concatenation optimises speaker
 This trade-off has practical implications.
 For applications prioritising speaker fidelity---as reflected by SIM---\textsc{concat} with longest references at $n{=}3$ may be preferred.
 For applications prioritising naturalness---virtual assistants, accessibility tools---\textsc{embed} offers more natural output with stable performance regardless of reference count or selection strategy.
+Notably, \textsc{embed} uses the model's \texttt{x\_vector\_only} conditioning pathway, whereas single and \textsc{concat} use prompt-based conditioning; thus part of the naturalness gain may reflect conditioning mode differences rather than averaging alone.
 
 Our scaling analysis reveals that reference selection strategy (longest vs.\ random) matters more than the number of references beyond~3.
-Practitioners should prioritise high-quality, longer reference utterances over accumulating additional references.
+Results suggest practitioners may benefit from prioritising high-quality, longer reference utterances over accumulating additional references.
 
 The pilot perceptual evaluation raises important questions about the validity of embedding-cosine speaker similarity as an evaluation metric.
 If automated SIM diverges from human perception, improvements measured in embedding space may not directly translate to perceived quality gains.
@@ -359,7 +351,7 @@ We plan to extend this comparison to additional TTS architectures and model size
 \textbf{Reproducibility.}
 Code and samples will be made available upon publication.
 
-\textbf{Generative AI disclosure.}
+\section*{Generative AI Use Disclosure}
 A generative AI coding assistant was used for experiment scripting and manuscript preparation.
 All results, analysis, and scientific claims were verified by the authors.
 

@@ -18,6 +18,9 @@ from pathlib import Path
 import matplotlib
 
 matplotlib.use("Agg")
+matplotlib.rcParams["pdf.fonttype"] = 42  # TrueType, avoid Type 3 fonts in PDFs
+matplotlib.rcParams["ps.fonttype"] = 42
+matplotlib.rcParams["pdf.use14corefonts"] = True  # avoid embedded font subsets entirely
 import matplotlib.pyplot as plt
 import numpy as np
 import pandas as pd
