@@ -5,7 +5,6 @@
 \usepackage{multirow}
 \usepackage{url}
 \usepackage{cite}
-\usepackage{placeins}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,shapes.geometric,fit,calc}
 
@@ -19,7 +18,7 @@ A Trade-Off Between Speaker Fidelity and Naturalness}
 \maketitle
 
 \begin{abstract}
-Zero-shot voice cloning typically uses a single reference utterance to characterize a target speaker. When multiple references are available, it is unclear how best to combine them. We systematically compare two multi-reference strategies for Qwen3-TTS: (1) audio concatenation, which provides multiple audio-text pairs as in-context examples, and (2) embedding averaging, which averages speaker embeddings extracted from each reference. In a controlled experiment of 1,275 runs (5 speakers x 5 targets x 3 seeds x 17 configurations) on LibriTTS-R, we observe a statistically significant trade-off: audio concatenation improves speaker similarity (SIM +0.02, p < 0.001, d up to 0.62) while embedding averaging improves naturalness (UTMOS +0.06, p < 1e-7, d up to 0.61). Neither approach dominates both axes, revealing a Pareto trade-off. An exploratory perceptual probe highlights potential divergence between embedding-based similarity and perceived voice identity.
+Zero-shot voice cloning typically uses a single reference utterance to characterize a target speaker. When multiple references are available, it is unclear how best to combine them. We systematically compare two multi-reference strategies for Qwen3-TTS: (1) audio concatenation, which provides multiple audio-text pairs as in-context examples, and (2) embedding averaging, which averages speaker embeddings extracted from each reference. In a controlled experiment of 1,275 runs (5 speakers x 5 targets x 3 seeds x 17 configurations) on LibriTTS-R, we observe a statistically significant trade-off: audio concatenation (ICL conditioning) improves speaker similarity (SIM $+$0.02, $p{<}0.001$, $d$ up to 0.62) while x-vector conditioning improves naturalness (UTMOS $+$0.06, $p{<}10^{-7}$, $d$ up to 0.61); the naturalness gain appears already at $n{=}1$, implicating the conditioning pathway rather than multi-reference averaging alone. Neither approach dominates both axes, revealing a Pareto trade-off. An exploratory perceptual probe highlights potential divergence between embedding-based similarity and perceived voice identity.
 \end{abstract}
 
 %----------------------------------------------------------------------
@@ -45,7 +44,7 @@ We address this gap with a large-scale experiment on Qwen3-TTS~\cite{qwen3tts}.
 Our contributions are:
 \begin{enumerate}
   \item A systematic comparison of two multi-reference voice cloning strategies on a recent neural TTS model across 1{,}275 controlled runs.
-  \item The discovery of a statistically significant Pareto trade-off: audio concatenation optimises speaker fidelity while embedding averaging optimises naturalness, with medium-to-large effect sizes.
+  \item The discovery of a statistically significant Pareto trade-off: audio concatenation (ICL conditioning) optimises speaker fidelity while x-vector conditioning optimises naturalness, with medium-to-large effect sizes. Notably, the naturalness gain appears already at $n{=}1$, suggesting it is attributable to the conditioning pathway rather than multi-reference averaging per se.
   \item Analysis of scaling behaviour and reference selection strategy, finding that longer references outperform random selection and that performance plateaus at 3 references.
 \end{enumerate}
 
@@ -255,14 +254,13 @@ Figure~\ref{fig:scaling} visualises the main result directly in SIM--UTMOS space
 \textsc{Concat}+longest occupies the high-SIM frontier (peak SIM at $n{=}3$), while \textsc{embed} occupies the high-UTMOS frontier (peak UTMOS at $n{=}3$, random).
 No configuration dominates both axes, confirming the Pareto trade-off and motivating task-specific operating-point selection.
 
-\begin{figure*}[t]
+\begin{figure}[t]
   \centering
-  \includegraphics[width=\textwidth]{figures/pareto_tradeoff}
-  \caption{Pareto trade-off between speaker similarity and naturalness across all configurations.
-  Points show per-configuration means with $\pm$1~SD error bars; color encodes approach, marker shape encodes selection strategy, and marker size encodes number of references.
+  \includegraphics[width=\columnwidth]{figures/pareto_tradeoff}
+  \caption{Pareto trade-off between speaker similarity and naturalness across configurations (means with $\pm$1~SD).
   \textsc{Concat}+longest maximises SIM, while \textsc{embed} maximises UTMOS.}
   \label{fig:scaling}
-\end{figure*}
+\end{figure}
 
 \subsection{Scaling with number of references}
 \label{sec:scaling_curve}
@@ -308,7 +306,7 @@ This highlights the importance of multi-speaker testing for drawing reliable con
 
 To test whether the Pareto trade-off persists with model scale, we repeat the full experiment on Qwen3-TTS-1.7B.
 Results are qualitatively consistent.
-\textsc{Concat}+longest improves speaker similarity (0.932\,$\rightarrow$\,0.948 at $n{=}3$, $p_\text{corr}{=}5.0{\times}10^{-4}$, $d{=}0.57$), while \textsc{embed}+random improves naturalness (4.453\,$\rightarrow$\,4.491 at $n{=}3$, $p_\text{corr}{=}6.5{\times}10^{-7}$, $d{=}0.60$).
+\textsc{Concat}+longest improves speaker similarity (0.932 to 0.948 at $n{=}3$, $p_\text{corr}{=}5.0e-4$, $d{=}0.57$), while \textsc{embed}+random improves naturalness (4.453 to 4.491 at $n{=}3$, $p_\text{corr}{=}6.5e-7$, $d{=}0.60$).
 This suggests the trade-off is robust within the Qwen3-TTS family across at least two model sizes.
 
 \subsection{Exploratory perceptual probe (qualitative)}
@@ -319,8 +317,6 @@ The listener preferred \textsc{concat} for speaker identity and \textsc{embed} f
 However, in one case where the SIM metric favoured \textsc{embed} (0.983 vs.\ 0.976), the listener judged \textsc{concat} as the better voice match.
 While far too limited for statistical inference, this observation suggests that cosine similarity in WavLM embedding space may not fully capture perceptual voice identity.
 A statistically powered listener study is required to assess perceptual significance.
-
-\FloatBarrier
 
 %----------------------------------------------------------------------
 \section{Discussion and Conclusion}
@@ -333,7 +329,7 @@ Our central finding is a Pareto trade-off: audio concatenation optimises speaker
 This trade-off has practical implications.
 For applications prioritising speaker fidelity---as reflected by SIM---\textsc{concat} with longest references at $n{=}3$ may be preferred.
 For applications prioritising naturalness---virtual assistants, accessibility tools---\textsc{embed} offers more natural output with stable performance regardless of reference count or selection strategy.
-Notably, \textsc{embed} uses the model's \texttt{x\_vector\_only} conditioning pathway, whereas single and \textsc{concat} use prompt-based conditioning; thus part of the naturalness gain may reflect conditioning mode differences rather than averaging alone.
+Notably, \textsc{embed} uses the model's \texttt{x\_vector\_only} conditioning pathway, whereas single and \textsc{concat} use prompt-based conditioning. The fact that \textsc{embed} achieves significant UTMOS improvement already at $n{=}1$ (before any averaging occurs) strongly suggests the naturalness gain is primarily attributable to the conditioning pathway rather than multi-reference averaging. This is an important confound: our results characterise the two strategies as deployed, but cannot isolate the averaging effect from the conditioning mode effect.
 
 Our scaling analysis reveals that reference selection strategy (longest vs.\ random) matters more than the number of references beyond~3.
 Results suggest practitioners may benefit from prioritising high-quality, longer reference utterances over accumulating additional references.
@@ -354,6 +350,7 @@ We plan to extend this comparison to additional TTS architectures and model size
 \textbf{Reproducibility.}
 Code and samples will be made available upon publication.
 
+\clearpage
 \section*{Generative AI Use Disclosure}
 A generative AI coding assistant was used for experiment scripting and manuscript preparation.
 All results, analysis, and scientific claims were verified by the authors.
