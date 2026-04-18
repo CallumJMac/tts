@@ -1,86 +1,128 @@
 <div align="center">
+  <div>&nbsp;</div>
+  <h1>🎙️ Multi-Reference Voice Cloning for Qwen3-TTS</h1>
+  <p><em>A systematic study of the trade-off between speaker fidelity and naturalness</em></p>
 
-# 🎙️ Multi-Reference Voice Cloning for Qwen3-TTS
+  <a href="https://arxiv.org/abs/XXXX.XXXXX"><img src="https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b.svg" alt="arXiv"/></a>
+  &nbsp;
+  <a href="LICENSE"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT License"/></a>
+  &nbsp;
+  <a href="https://www.python.org/downloads/"><img src="https://img.shields.io/badge/python-3.10+-blue.svg" alt="Python 3.10+"/></a>
+  &nbsp;
+  <img src="https://img.shields.io/badge/GPU-24GB%20VRAM-green.svg" alt="GPU 24GB VRAM"/>
 
-### A Trade-Off Between Speaker Fidelity and Naturalness
+  <div>&nbsp;</div>
 
-[![arXiv](https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b.svg)](https://arxiv.org/abs/XXXX.XXXXX)
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
-[![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
-[![GPU: 24GB VRAM](https://img.shields.io/badge/GPU-24GB%20VRAM-green.svg)](#installation)
+  <a href="#-what-this-repo-gives-you">What's inside</a> •
+  <a href="#-key-results">Results</a> •
+  <a href="#-audio-demos">Audio demos</a> •
+  <a href="#-installation">Installation</a> •
+  <a href="#-quick-start">Quick start</a> •
+  <a href="#-reproducing-the-experiment">Reproduce</a> •
+  <a href="#citation">Citation</a>
 
-**[📄 Paper](#citation) · [📊 Results](results/phase3/results.csv) · [🔬 Analysis](results/phase3/analysis/)**
-
+  <div>&nbsp;</div>
 </div>
 
 ---
 
-## Overview
+## 🎁 What this repo gives you
 
-When multiple reference utterances are available for voice cloning, how should they be combined? We systematically compare two multi-reference strategies for **Qwen3-TTS** across **1,275 controlled runs** on LibriTTS-R and find a clear Pareto trade-off:
+When you have multiple reference recordings of a speaker, how should you combine them for voice cloning? This repo answers that question with a large-scale controlled experiment and provides **production-ready code** you can use today.
 
-- 🎯 **Audio concatenation (ICL)** → maximises speaker identity (SIM **+0.02**, *d* = 0.62)
-- 🌊 **Embedding averaging (x-vector)** → maximises naturalness (UTMOS **+0.06**, *d* = 0.61)
+**1. A definitive answer on multi-reference strategy.**
+1,275 controlled synthesis runs across 5 speakers, 2 model sizes, and 17 configurations. Not a demo — a rigorous study with Bonferroni-corrected statistics and effect sizes.
 
-Neither strategy dominates both axes. The right choice depends on whether your application prioritises *sounding like the speaker* or *sounding natural*.
+**2. Plug-and-play combiners for Qwen3-TTS.**
+Three drop-in strategies (`ConcatAudioCombiner`, `EmbedAvgCombiner`, `ConcatCodeCombiner`) that slot into any Qwen3-TTS pipeline. The code tells you which to use and when.
+
+**3. A complete TTS evaluation pipeline.**
+One script that computes UTMOS (naturalness), WavLM speaker similarity, WER, and SpeechBERTScore — bundled, calibrated, and ready to run on your own outputs.
+
+**4. The raw data.**
+All 1,275 result rows, significance tables, and analysis plots included — reproduce every figure in the paper without re-running synthesis.
+
+---
+
+## 🔑 Key Finding
+
+> **There is no single best strategy.** Audio concatenation maximises speaker identity; embedding averaging maximises naturalness. Neither dominates both axes.
+
+The choice depends entirely on your application:
+
+| I need… | Use | Why |
+|---|---|---|
+| The voice to sound *like the person* | `ConcatAudioCombiner`, longest 3 refs | SIM **+0.02** over baseline (*d* = 0.62, *p* < 0.001) |
+| The speech to sound *natural and fluent* | `EmbedAvgCombiner`, any 3 refs | UTMOS **+0.06** over baseline (*d* = 0.61, *p* < 10⁻⁷) |
+| Stability above all else | `EmbedAvgCombiner` | 0% catastrophic failure rate across all configs |
+
+Results validated on both **Qwen3-TTS-0.6B** and **Qwen3-TTS-1.7B**.
+
+---
+
+## 📊 Key Results
 
 <div align="center">
 
-![Pareto Trade-off](paper/figures/pareto_tradeoff.pdf)
-
-*Pareto frontier in SIM–UTMOS space. Each point is a configuration mean ± 1 SD.*
+| Strategy | Conditioning | UTMOS ↑ | Speaker SIM ↑ | WER ↓ | Fail rate |
+|---|---|:---:|:---:|:---:|:---:|
+| Single baseline | ICL prompt | 4.425 | 0.928 | 15.3% | 0% |
+| **Concat + longest** (*n*=3) | ICL prompt | 4.416 | **0.949** † | 21.3% | 2% |
+| **Embed avg + random** (*n*=3) | x-vector | **4.483** † | 0.930 | 14.5% | 0% |
 
 </div>
 
----
-
-## 🎧 Audio Demos
-
-Three samples on the same speaker and target text — listen to hear the trade-off:
-
-| Sample | Strategy | What to listen for |
-|--------|----------|-------------------|
-| [01_baseline_single.wav](samples/demo/01_baseline_single.wav) | Single reference (ICL) | Baseline |
-| [02_concat_longest_3.wav](samples/demo/02_concat_longest_3.wav) | Concat 3 refs (ICL) | Stronger speaker identity |
-| [03_embed_avg_3.wav](samples/demo/03_embed_avg_3.wav) | Embed avg 3 refs (x-vector) | Smoother, more natural |
-
-Regenerate with `scripts/generate_samples.py` — see [`samples/demo/README.md`](samples/demo/README.md).
-
----
-
-## 📈 Key Results
-
-| Strategy | Conditioning | UTMOS ↑ | Speaker SIM ↑ | Failure Rate |
-|---|---|---|---|---|
-| Single baseline | ICL prompt | 4.425 | 0.928 | 0% |
-| **Concat + longest** (*n* = 3) | ICL prompt | 4.416 | **0.949** † | 2% |
-| **Embed avg + random** (*n* = 3) | x-vector only | **4.483** † | 0.930 | 0% |
-
-† *p* < 0.001, Bonferroni-corrected Wilcoxon signed-rank test vs. baseline.
-
-Results validated across two model sizes: **Qwen3-TTS-0.6B** and **Qwen3-TTS-1.7B**.
+† *p* < 0.001, Bonferroni-corrected Wilcoxon signed-rank vs baseline. Full results: [`results/phase3/results.csv`](results/phase3/results.csv)
 
 <details>
-<summary>📋 Full results table (all 17 configurations)</summary>
+<summary>📋 View all 17 configurations</summary>
+<br>
 
-See [`results/phase3/results.csv`](results/phase3/results.csv) for all 1,275 individual synthesis runs, or [`results/phase3/analysis/summary_stats.csv`](results/phase3/analysis/summary_stats.csv) for aggregated statistics.
+See [`results/phase3/analysis/summary_stats.csv`](results/phase3/analysis/summary_stats.csv) for aggregated statistics across all configurations, or [`results/phase3/analysis/significance_tests.csv`](results/phase3/analysis/significance_tests.csv) for the full significance table.
 
 </details>
 
 ---
 
-## 🔑 Key Findings
+## 🎧 Audio Demos
 
-1. **Pareto trade-off is robust** — consistent across 5 speakers and two model scales (0.6B, 1.7B)
-2. **Naturalness gain appears at *n* = 1** — the UTMOS improvement in embedding averaging is attributable to the x-vector conditioning *pathway*, not multi-reference averaging per se
-3. **Reference selection matters more than count** — longest utterances outperform random selection; gains plateau beyond *n* = 3
-4. **Concat instability risk** — concat + random at *n* = 3 can produce catastrophic WER failures (max 297.8s synthesis time); embed is stable across all configurations
+Three clips — same speaker (Boris Johnson), same target text, different strategies. Listen for the fidelity vs. naturalness trade-off:
+
+| # | File | Strategy | What to listen for |
+|---|------|----------|-------------------|
+| 1 | [`01_baseline_single.wav`](samples/demo/01_baseline_single.wav) | Single ref, ICL | Baseline |
+| 2 | [`02_concat_longest_3.wav`](samples/demo/02_concat_longest_3.wav) | Concat 3 refs, ICL | Stronger speaker identity |
+| 3 | [`03_embed_avg_3.wav`](samples/demo/03_embed_avg_3.wav) | Embed avg 3 refs, x-vector | Smoother, more natural |
+
+> **Target text:** *"When multiple reference utterances are available, how should they be combined? We find a clear trade-off: concatenating references maximises speaker identity, while averaging embeddings maximises naturalness."*
+
+Regenerate with [`scripts/generate_samples.py`](scripts/generate_samples.py) — see [`samples/demo/README.md`](samples/demo/README.md).
+
+---
+
+## ⚙️ How it works
+
+Three conditioning strategies are compared:
+
+<div align="center">
+
+```
+(a) Single baseline    [Ref audio + text] ──────────────────► TTS ► Output
+
+(b) Audio concat       [Refs 1–N audio+text] ── Concat ──────► TTS ► Output
+
+(c) Embedding avg      [Refs 1–N audio] ── Encode ── Avg ──► TTS (x-vec) ► Output
+```
+
+</div>
+
+**Why they behave differently:** Concat and baseline use Qwen3-TTS's in-context learning (ICL) pathway — the model sees raw audio tokens and infers the speaker. Embedding averaging uses the `x_vector_only` conditioning pathway — a fundamentally different inference route. The naturalness gain in embedding averaging is primarily attributable to the conditioning pathway, not the averaging itself (the gain is already present at *n*=1, before any averaging occurs).
 
 ---
 
 ## 🚀 Installation
 
-Requires Python 3.10+ and an NVIDIA GPU with ≥ 24 GB VRAM (tested on A10G).
+Requires Python 3.10+ and an NVIDIA GPU with ≥ 24 GB VRAM.
 
 ```bash
 git clone https://github.com/CallumJMac/tts.git
@@ -88,7 +130,7 @@ cd tts
 pip install -r requirements.txt
 ```
 
-> **Note:** PyTorch and torchaudio are not in `requirements.txt` — install them separately per your CUDA version from [pytorch.org](https://pytorch.org/get-started/locally/).
+> **PyTorch:** Install separately per your CUDA version from [pytorch.org](https://pytorch.org/get-started/locally/).
 
 ---
 
@@ -96,19 +138,25 @@ pip install -r requirements.txt
 
 ```python
 from src.experiment.combiners import ConcatAudioCombiner, EmbedAvgCombiner
-from src.experiment.ref_pool import RefPool
+from src.experiment.ref_pool import RefItem
+import soundfile as sf
 
-# Load reference utterances
-pool = RefPool("data/libritts_r_aligned", speaker_id="1188")
-refs = pool.select(n=3, strategy="longest")
+# Build reference items
+def make_ref(path, text):
+    info = sf.info(path)
+    return RefItem(id=path, speaker_id="spk", text=text,
+                   path=path, sample_rate=info.samplerate, duration=info.duration)
 
-# Strategy 1: Audio concatenation (maximises speaker similarity)
-combiner = ConcatAudioCombiner()
-combined = combiner.combine(refs)
+refs = [make_ref("ref1.wav", "text one"), make_ref("ref2.wav", "text two"),
+        make_ref("ref3.wav", "text three")]
 
-# Strategy 2: Embedding averaging (maximises naturalness)
-combiner = EmbedAvgCombiner()
-combined = combiner.combine(refs, model=tts_model)
+# Strategy 1: maximise speaker identity
+concat = ConcatAudioCombiner().combine(refs)
+# → pass concat.audio_array + concat.text to generate_voice_clone()
+
+# Strategy 2: maximise naturalness
+embed = EmbedAvgCombiner().combine(refs, model=tts_model)
+# → pass embed.voice_clone_prompt to generate_voice_clone()
 ```
 
 ---
@@ -116,103 +164,79 @@ combined = combiner.combine(refs, model=tts_model)
 ## 🔬 Reproducing the Experiment
 
 **Run all 1,275 configurations:**
-
 ```bash
-python src/experiment/run_fewshot.py \
-    --model qwen3-tts-0.6b \
-    --output-dir outputs/phase3
+python src/experiment/run_fewshot.py --output-dir outputs/phase3
 ```
 
-**Run a specific combiner:**
-
+**Run a specific strategy:**
 ```bash
-# Audio concatenation, longest 3 references
+# Concat, longest 3 refs (best for speaker fidelity)
 python src/experiment/run_fewshot.py \
-    --combiner concat_audio \
-    --n-refs 3 \
-    --strategy longest \
+    --combiner concat_audio --n-refs 3 --strategy longest \
     --output-dir outputs/concat_longest_3
 
-# Embedding averaging, random 3 references
+# Embed avg, random 3 refs (best for naturalness)
 python src/experiment/run_fewshot.py \
-    --combiner embed_avg \
-    --n-refs 3 \
-    --strategy random \
+    --combiner embed_avg --n-refs 3 --strategy random \
     --output-dir outputs/embed_random_3
 ```
 
 **Evaluate generated audio:**
-
 ```bash
-python src/evaluation/evaluate.py \
-    --generated-dir outputs/phase3 \
-    --ref-audio-dir data/libritts_r_aligned \
-    --output results/my_run.csv
+python src/evaluation/evaluate.py generated.wav \
+    --ref-audio ref.wav --target-text-file target.txt
 ```
 
-**Analyse and reproduce paper figures:**
-
+**Reproduce paper figures:**
 ```bash
 python src/experiment/analyze.py \
-    --results results/my_run.csv \
+    --results results/phase3/results.csv \
     --output-dir results/my_analysis
 ```
 
 ---
 
-## 🏗️ Code Structure
+## 🗂️ Code Structure
 
 ```
 src/
 ├── experiment/
-│   ├── run_fewshot.py      # Main experiment runner (1,275 runs)
+│   ├── run_fewshot.py      # Main runner — 1,275 experiment configurations
 │   ├── combiners.py        # ConcatAudioCombiner · EmbedAvgCombiner · ConcatCodeCombiner
-│   ├── ref_pool.py         # Reference utterance pool + selection strategies
-│   └── analyze.py          # Statistical analysis + figure generation
+│   ├── ref_pool.py         # Reference pool + longest/random selection strategies
+│   └── analyze.py          # Statistical analysis, significance tests, figure generation
 ├── evaluation/
 │   └── evaluate.py         # UTMOS · WavLM SIM · WER · SpeechBERTScore
-├── tts/
-│   └── qwen_voice_clone.py # Qwen3-TTS wrapper
-└── preprocess/
-    └── diarize.py          # Speaker diarisation utilities
+└── tts/
+    └── qwen_voice_clone.py # Qwen3-TTS wrapper
 
 scripts/
+├── generate_samples.py     # Generate strategy comparison demo audio
 ├── run_fewshot.py          # CLI entry point
 ├── evaluate.py             # CLI evaluation tool
-├── analyze_fewshot.py      # CLI analysis tool
-├── wav_mov.py              # Video → WAV conversion
-└── stitch_good_wavs.py     # WAV stitching
+└── analyze_fewshot.py      # CLI analysis tool
+
+results/phase3/
+├── results.csv             # Raw results — all 1,275 runs
+└── analysis/               # Aggregated stats, significance tables, plots
 
 paper/
-├── main.tex                # Paper source
+├── main.tex                # Paper LaTeX source
 ├── refs.bib                # Bibliography
-└── figures/                # All paper figures (PDF + PNG)
-
-results/
-└── phase3/
-    ├── results.csv         # Raw results (1,275 runs)
-    └── analysis/           # Aggregated stats + plots
+└── figures/                # All paper figures
 ```
 
 ---
 
-## 📐 Method
+## ⚠️ Limitations
 
-Three conditioning strategies are compared:
-
-| Strategy | Mode | How references are combined |
-|---|---|---|
-| **Single baseline** | ICL prompt | One (audio, text) pair as speaker prompt |
-| **Concat** | ICL prompt | *N* audio files concatenated; texts joined |
-| **Embed avg** | x-vector only | Speaker embeddings extracted and averaged |
-
-> **Conditioning note:** Concat and baseline use Qwen3-TTS's prompt-based ICL pathway; embed avg uses `x_vector_only` mode. The UTMOS advantage of embed avg is likely attributable to the conditioning pathway rather than averaging alone — see §4 of the paper.
+- Evaluated on one model family (Qwen3-TTS 0.6B and 1.7B) and one dataset (LibriTTS-R, English only)
+- The UTMOS naturalness gain in embedding averaging reflects the x-vector conditioning pathway, not multi-reference averaging per se
+- No formal listening test — automated metrics only (UTMOS, WavLM SIM). Human perceptual validation is future work
 
 ---
 
-## 📚 Citation
-
-If you use this code or findings, please cite:
+## Citation
 
 ```bibtex
 @inproceedings{macpherson2026multiref,
@@ -227,12 +251,12 @@ If you use this code or findings, please cite:
 
 ---
 
-## 📜 License
+## License
 
 MIT — see [LICENSE](LICENSE).
 
 ---
 
 <div align="center">
-<sub>Built on <a href="https://huggingface.co/Qwen/Qwen3-TTS">Qwen3-TTS</a> · Evaluated on <a href="https://www.openslr.org/141/">LibriTTS-R</a></sub>
+  <sub>Built on <a href="https://huggingface.co/Qwen/Qwen3-TTS">Qwen3-TTS</a> · Evaluated on <a href="https://www.openslr.org/141/">LibriTTS-R</a></sub>
 </div>
