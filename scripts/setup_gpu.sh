@@ -24,7 +24,7 @@ echo
 # --- System deps ---
 echo "Installing system packages..."
 sudo apt-get update -qq
-sudo apt-get install -y -qq python3-venv python3-pip > /dev/null
+sudo apt-get install -y -qq python3-venv python3-pip ffmpeg > /dev/null
 
 # --- Python venv ---
 PYTHON=${PYTHON:-python3}

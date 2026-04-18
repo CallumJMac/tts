@@ -367,7 +367,8 @@ def _save_plot(fig: plt.Figure, output_dir: Path, name: str, formats: list[str])
 
 def plot_pareto_tradeoff(df: pd.DataFrame, output_dir: Path, formats: list[str]) -> None:
     summary = compute_summary_stats(df)
-    fig, ax = plt.subplots(figsize=(6.4, 4.3))
+    # Column-friendly size: avoid generating a huge canvas that will be heavily downscaled in LaTeX.
+    fig, ax = plt.subplots(figsize=(3.6, 2.7))
 
     # Encode configuration metadata visually so we don't need unreadable per-point labels.
     size_map = {1: 26, 2: 34, 3: 44, 5: 62}
@@ -462,17 +463,28 @@ def plot_pareto_tradeoff(df: pd.DataFrame, output_dir: Path, formats: list[str])
         if a in set(summary["approach"].unique())
     ]
     strategy_handles = [
-        Line2D([0], [0], marker=STRATEGY_MARKERS[s], color="black", linestyle="none", markersize=6, label=s)
+        Line2D([0], [0], marker=STRATEGY_MARKERS[s], color="black", linestyle="none", markersize=5, label=s)
         for s in ["random", "longest"]
         if s in set(summary["strategy"].unique())
     ]
     size_handles = [
-        Line2D([0], [0], marker="o", color="black", linestyle="none", markersize=np.sqrt(size_map[n]) * 0.55, label=f"n={n}")
+        Line2D([0], [0], marker="o", color="black", linestyle="none", markersize=np.sqrt(size_map[n]) * 0.50, label=f"n={n}")
         for n in sorted(set(int(v) for v in summary["n_refs"].unique()))
         if n in size_map
     ]
     handles = approach_handles + strategy_handles + size_handles
-    ax.legend(handles=handles, loc="lower left", frameon=True, framealpha=0.9, fontsize=7)
+    ax.legend(
+        handles=handles,
+        loc="lower left",
+        ncol=2,
+        frameon=True,
+        framealpha=0.9,
+        fontsize=6,
+        borderpad=0.25,
+        labelspacing=0.25,
+        handletextpad=0.35,
+        columnspacing=0.8,
+    )
 
     ax.set_xlabel("Speaker Similarity")
     ax.set_ylabel("UTMOS")
@@ -503,21 +515,23 @@ def plot_stability_fail_rate(summary: pd.DataFrame, output_dir: Path, formats: l
     values = nonzero[col].values
     colors = [APPROACH_COLORS.get(a, "#777777") for a in nonzero["approach"]]
 
-    height = max(2.2, 0.35 * len(values) + 1.2)
-    fig, ax = plt.subplots(figsize=(6.6, height))
+    # Column-friendly size: keep canvas close to final rendered size to preserve font readability.
+    height = max(1.9, 0.28 * len(values) + 0.95)
+    fig, ax = plt.subplots(figsize=(3.6, height))
     y = np.arange(len(values))
     ax.barh(y, values, color=colors, alpha=0.9)
     ax.set_yticks(y)
     ax.set_yticklabels(labels, fontsize=8)
     ax.set_xlabel(f"Failure rate (WER > {threshold}) [%]")
     ax.grid(axis="x", alpha=0.22, linewidth=0.6)
+    ax.tick_params(axis="x", labelsize=8)
 
     # Value labels
     for yi, v in zip(y, values):
         ax.text(v + 0.15, yi, f"{v:.1f}%", va="center", fontsize=8)
 
     ax.set_xlim(0, max(1.0, float(np.max(values)) * 1.15))
-    ax.set_title("Stability (Non-Zero Failure Rates)")
+    ax.set_title("Stability (Non-Zero Failure Rates)", fontsize=9)
 
     name = "stability_fail_rate" if abs(threshold - 0.5) < 1e-9 else f"stability_fail_rate_wer_gt_{str(threshold).replace('.', '_')}"
     _save_plot(fig, output_dir, name, formats)
@@ -587,10 +601,13 @@ def plot_scaling_curve(df: pd.DataFrame, output_dir: Path, formats: list[str]) -
     approaches = _get_plot_approaches(df)
     strategies = sorted(df["strategy"].unique())
 
-    fig, axes = plt.subplots(1, len(strategies), figsize=(6 * len(strategies), 5), squeeze=False)
+    # Column-friendly layout: stack strategies vertically so fonts remain readable at column width.
+    fig, axes = plt.subplots(len(strategies), 1, figsize=(3.6, 3.8), sharex=True, squeeze=False)
     for idx, strategy in enumerate(strategies):
-        ax = axes[0][idx]
+        ax = axes[idx][0]
         strat_df = df[df["strategy"] == strategy]
+        ymins: list[float] = []
+        ymaxs: list[float] = []
         for approach in approaches:
             app = strat_df[strat_df["approach"] == approach]
             if app.empty:
@@ -601,19 +618,35 @@ def plot_scaling_curve(df: pd.DataFrame, output_dir: Path, formats: list[str]) -
             x = means.index.values
             y = means.values
             yerr = stds.values
+            if len(y):
+                ymins.append(float((y - yerr).min()))
+                ymaxs.append(float((y + yerr).max()))
             color = APPROACH_COLORS.get(approach, "#777777")
             label = APPROACH_LABELS.get(approach, approach)
-            ax.plot(x, y, "o-", color=color, linewidth=2, markersize=6, label=label)
-            ax.fill_between(x, y - yerr, y + yerr, color=color, alpha=0.12)
+            ax.plot(x, y, "o-", color=color, linewidth=1.8, markersize=4.5, label=label)
+            ax.fill_between(x, y - yerr, y + yerr, color=color, alpha=0.12, linewidth=0)
 
-        ax.set_xticks(sorted(df["n_refs"].unique()))
-        ax.set_xlabel("Number of References")
-        ax.set_ylabel("Speaker Similarity")
-        ax.set_title(f"Scaling Curve ({strategy})")
-        ax.grid(alpha=0.25)
-        ax.legend(fontsize=8)
+        # Zoom y-axis so small deltas are visible in the paper.
+        if ymins and ymaxs:
+            margin = 0.004
+            lo = max(0.0, min(ymins) - margin)
+            hi = min(1.0, max(ymaxs) + margin)
+            # Avoid pathological near-zero ranges.
+            if hi - lo < 0.02:
+                mid = (hi + lo) / 2.0
+                lo = max(0.0, mid - 0.01)
+                hi = min(1.0, mid + 0.01)
+            ax.set_ylim(lo, hi)
 
-    fig.tight_layout()
+        ax.set_ylabel("Speaker Sim")
+        ax.set_title(f"Scaling ({strategy})", fontsize=9)
+        ax.grid(alpha=0.22, linewidth=0.6)
+        ax.tick_params(axis="both", labelsize=8)
+        ax.legend(fontsize=7, loc="lower right", framealpha=0.9)
+
+    axes[-1][0].set_xticks(sorted(df["n_refs"].unique()))
+    axes[-1][0].set_xlabel("# References")
+    fig.tight_layout(pad=0.6)
     _save_plot(fig, output_dir, "scaling_curve", formats)
 
 
