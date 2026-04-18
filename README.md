@@ -34,6 +34,20 @@ Neither strategy dominates both axes. The right choice depends on whether your a
 
 ---
 
+## 🎧 Audio Demos
+
+Three samples on the same speaker and target text — listen to hear the trade-off:
+
+| Sample | Strategy | What to listen for |
+|--------|----------|-------------------|
+| [01_baseline_single.wav](samples/demo/01_baseline_single.wav) | Single reference (ICL) | Baseline |
+| [02_concat_longest_3.wav](samples/demo/02_concat_longest_3.wav) | Concat 3 refs (ICL) | Stronger speaker identity |
+| [03_embed_avg_3.wav](samples/demo/03_embed_avg_3.wav) | Embed avg 3 refs (x-vector) | Smoother, more natural |
+
+Regenerate with `scripts/generate_samples.py` — see [`samples/demo/README.md`](samples/demo/README.md).
+
+---
+
 ## 📈 Key Results
 
 | Strategy | Conditioning | UTMOS ↑ | Speaker SIM ↑ | Failure Rate |
