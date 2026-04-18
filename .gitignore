@@ -36,3 +36,4 @@ docs/paper-pages/
 # Allow samples directory
 !samples/
 !samples/**
+docs/
