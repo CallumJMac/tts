@@ -1,0 +1,58 @@
+% interspeech2026.sty - Style file for Interspeech 2026
+% Based on the standard ISCA/Interspeech paper template
+\NeedsTeXFormat{LaTeX2e}
+\ProvidesPackage{interspeech2026}[2026/01/01 Interspeech 2026 paper format]
+
+% ---- Page geometry (A4, double-column) ----
+\RequirePackage[a4paper,top=25.4mm,bottom=25.4mm,left=20mm,right=20mm,columnsep=8mm]{geometry}
+
+% ---- Fonts ----
+\RequirePackage[T1]{fontenc}
+\RequirePackage{times}
+
+% ---- Author commands ----
+\def\name#1{\gdef\@name{#1}}
+\def\address#1{\gdef\@address{#1}}
+\name{}
+\address{}
+
+% ---- Title formatting ----
+\renewcommand{\maketitle}{%
+  \twocolumn[%
+    \begin{center}
+    {\Large\bfseries \@title \par}
+    \vspace{1.2em}
+    {\normalsize\itshape \@name \par}
+    \vspace{0.4em}
+    {\normalsize \@address \par}
+    \vspace{2em}
+    \end{center}
+  ]%
+}
+
+% ---- Section formatting ----
+\renewcommand{\section}{\@startsection{section}{1}{0pt}%
+  {-2.5ex plus -1ex minus -0.5ex}{1.2ex plus 0.3ex}{\normalsize\bfseries}}
+\renewcommand{\subsection}{\@startsection{subsection}{2}{0pt}%
+  {-2ex plus -1ex minus -0.5ex}{0.8ex plus 0.2ex}{\normalsize\itshape}}
+
+% ---- Abstract ----
+\renewenvironment{abstract}{%
+  \centerline{\normalsize\bfseries Abstract}%
+  \vspace{0.5em}%
+  \begin{quote}\small\itshape
+}{%
+  \end{quote}\vspace{1em}%
+}
+
+% ---- No page numbers for double-blind submission ----
+\pagestyle{empty}
+
+% ---- Captions ----
+\RequirePackage[font=small,labelfont=bf]{caption}
+
+% ---- Tight lists ----
+\RequirePackage{enumitem}
+\setlist{nosep,leftmargin=1.5em}
+
+\endinput

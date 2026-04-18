@@ -9,3 +9,26 @@ outputs/*
 *.pyc
 *.wav
 *.mp4
+data/*
+
+# LaTeX build artifacts
+paper/*.aux
+paper/*.log
+paper/*.bbl
+paper/*.blg
+paper/*.fls
+paper/*.fdb_latexmk
+paper/*.synctex.gz
+paper/*.out
+paper/*.toc
+paper/main.pdf
+
+# Backup files
+*.orig
+*.bak
+
+# Draft PDF versions (keep source only)
+paper/interspeech/*.pdf
+
+# Generated inspection assets
+docs/paper-pages/

@@ -1,0 +1,23 @@
+\begin{tabular}{llcccc}
+\toprule
+\textbf{Approach} & \textbf{Strategy} & \textbf{\#Refs} & \textbf{UTMOS} ↑ & \textbf{Speaker Sim} ↑ & \textbf{WER} ↓ \\
+\midrule
+Single Baseline & random & 1 & 4.425 ± 0.094 & 0.9281 ± 0.0441 & 15.3% ± 12.0% \\
+Concat Audio & longest & 1 & 4.390 ± 0.168 & 0.9416 ± 0.0395 & 22.3% ± 22.1% \\
+Concat Audio & random & 1 & 4.431 ± 0.119 & 0.9259 ± 0.0470 & 15.9% ± 12.7% \\
+Concat Audio & longest & 2 & 4.366 ± 0.392 & 0.9470 ± 0.0357 & 24.1% ± 73.6% \\
+Concat Audio & random & 2 & 4.432 ± 0.126 & 0.9374 ± 0.0420 & 14.4% ± 11.1% \\
+Concat Audio & longest & 3 & 4.416 ± 0.098 & \textbf{0.9489 ± 0.0380} & 21.3% ± 18.0% \\
+Concat Audio & random & 3 & 4.390 ± 0.379 & 0.9409 ± 0.0444 & 81.6% ± 555.3% \\
+Concat Audio & longest & 5 & 4.400 ± 0.143 & 0.9483 ± 0.0366 & 15.7% ± 13.0% \\
+Concat Audio & random & 5 & 4.385 ± 0.381 & 0.9442 ± 0.0439 & 39.7% ± 229.6% \\
+Embed Avg & longest & 1 & 4.470 ± 0.086 & 0.9359 ± 0.0372 & \textbf{13.4% ± 10.4%} \\
+Embed Avg & random & 1 & 4.462 ± 0.082 & 0.9206 ± 0.0450 & 14.5% ± 11.6% \\
+Embed Avg & longest & 2 & 4.474 ± 0.087 & 0.9341 ± 0.0399 & 14.0% ± 10.8% \\
+Embed Avg & random & 2 & 4.473 ± 0.072 & 0.9274 ± 0.0418 & 13.8% ± 11.3% \\
+Embed Avg & longest & 3 & 4.469 ± 0.078 & 0.9391 ± 0.0372 & 15.0% ± 13.6% \\
+Embed Avg & random & 3 & \textbf{4.483 ± 0.055} & 0.9304 ± 0.0392 & 14.5% ± 11.0% \\
+Embed Avg & longest & 5 & 4.474 ± 0.054 & 0.9379 ± 0.0341 & 14.4% ± 11.9% \\
+Embed Avg & random & 5 & 4.463 ± 0.103 & 0.9368 ± 0.0346 & 14.1% ± 11.4% \\
+\bottomrule
+\end{tabular}
