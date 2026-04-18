@@ -31,4 +31,4 @@ paper/main.pdf
 paper/interspeech/*.pdf
 
 # Generated inspection assets
-docs/paper-pages/
+docs/paper-pages/!samples/demo/*.wav
