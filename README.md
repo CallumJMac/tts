@@ -6,7 +6,7 @@
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](LICENSE)
 [![Python 3.10+](https://img.shields.io/badge/python-3.10+-blue.svg)](https://www.python.org/downloads/)
 
-**[Paper](#citation) · [Results](results/phase3/results.csv) · [Audio Demos](#-audio-demos)**
+**[Paper](#citation) · [Results](results/phase3/results.csv) · [🎧 Audio Demos](https://callumjmac.github.io/tts/)**
 
 </div>
 
@@ -26,13 +26,25 @@ Results validated on Qwen3-TTS-0.6B and 1.7B. Full results: [`results/phase3/res
 
 ## 🎧 Audio Demos
 
-Same speaker, same target text — three strategies:
+**[→ Open interactive demo with audio players](https://callumjmac.github.io/tts/)**
 
-| | Strategy | Listen for |
-|-|----------|-----------|
-| [01_baseline.wav](samples/demo/01_baseline_single.wav) | Single ref (ICL) | Baseline |
-| [02_concat.wav](samples/demo/02_concat_longest_3.wav) | Concat 3 refs | Stronger speaker match |
-| [03_embed.wav](samples/demo/03_embed_avg_3.wav) | Embed avg 3 refs | Smoother, more natural |
+Two demos from the experiment — selected for maximum contrast on each metric:
+
+**Demo A — Speaker identity** (speaker 1995, largest SIM gain in dataset)
+
+| Strategy | SIM | UTMOS |
+|----------|-----|-------|
+| Single baseline | 0.870 | 4.481 |
+| ConcatAudio · 3 refs (longest) | **0.987** (+0.117) | 4.457 |
+| EmbedAvg · 3 refs (random) | 0.949 | 4.472 |
+
+**Demo B — Naturalness** (speaker 1188, largest UTMOS gain in dataset)
+
+| Strategy | UTMOS | SIM |
+|----------|-------|-----|
+| Single baseline | 4.100 | 0.973 |
+| ConcatAudio · 3 refs (longest) | 4.414 | **0.981** |
+| EmbedAvg · 3 refs (random) | **4.477** (+0.377) | 0.977 |
 
 ---
 

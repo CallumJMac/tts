@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Multi-Reference Voice Cloning — Audio Demos</title>
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif;
+      background: #0d1117;
+      color: #e6edf3;
+      line-height: 1.6;
+      padding: 2rem 1rem;
+    }
+
+    .container { max-width: 860px; margin: 0 auto; }
+
+    h1 { font-size: 1.6rem; font-weight: 700; margin-bottom: 0.4rem; }
+    h2 { font-size: 1.15rem; font-weight: 600; margin: 2.5rem 0 0.8rem; color: #79c0ff; }
+    h3 { font-size: 0.95rem; font-weight: 600; margin-bottom: 0.3rem; color: #a5d6ff; }
+
+    .subtitle { color: #8b949e; font-size: 0.95rem; margin-bottom: 1.8rem; }
+
+    .badges { display: flex; gap: 0.5rem; flex-wrap: wrap; margin-bottom: 1.8rem; }
+    .badges a img { height: 20px; }
+
+    .finding {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 1rem 1.2rem;
+      margin-bottom: 1.8rem;
+    }
+    .finding-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 0.8rem; }
+    .finding-item { background: #0d1117; border-radius: 6px; padding: 0.7rem 1rem; }
+    .finding-item .goal { font-size: 0.8rem; text-transform: uppercase; color: #8b949e; letter-spacing: 0.05em; }
+    .finding-item .strategy { font-weight: 600; font-family: monospace; font-size: 0.95rem; color: #79c0ff; }
+    .finding-item .gain { font-size: 0.85rem; color: #3fb950; margin-top: 0.2rem; }
+
+    .demo-set {
+      background: #161b22;
+      border: 1px solid #30363d;
+      border-radius: 8px;
+      padding: 1.2rem 1.4rem;
+      margin-bottom: 1.5rem;
+    }
+    .target-text {
+      background: #0d1117;
+      border-left: 3px solid #30363d;
+      padding: 0.5rem 0.8rem;
+      margin: 0.6rem 0 1.2rem;
+      font-style: italic;
+      font-size: 0.9rem;
+      color: #8b949e;
+      border-radius: 0 4px 4px 0;
+    }
+
+    .samples { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+    .sample {
+      background: #0d1117;
+      border: 1px solid #21262d;
+      border-radius: 8px;
+      padding: 1rem;
+    }
+    .sample-label {
+      font-size: 0.75rem;
+      text-transform: uppercase;
+      letter-spacing: 0.06em;
+      color: #8b949e;
+      margin-bottom: 0.2rem;
+    }
+    .sample-name { font-weight: 600; font-size: 0.95rem; margin-bottom: 0.5rem; }
+    .sample-name.baseline { color: #e6edf3; }
+    .sample-name.concat { color: #79c0ff; }
+    .sample-name.embed { color: #ff7b72; }
+
+    .metrics { display: flex; gap: 0.8rem; margin-bottom: 0.6rem; flex-wrap: wrap; }
+    .metric { font-size: 0.78rem; color: #8b949e; }
+    .metric span { color: #e6edf3; font-weight: 600; }
+    .metric .up { color: #3fb950; }
+    .metric .down { color: #ff7b72; }
+
+    audio {
+      width: 100%;
+      height: 32px;
+      margin-top: 0.2rem;
+    }
+    audio::-webkit-media-controls-panel { background: #21262d; }
+
+    .section-note {
+      font-size: 0.82rem;
+      color: #8b949e;
+      margin-top: 0.6rem;
+      font-style: italic;
+    }
+
+    .back-link { margin-top: 2.5rem; }
+    .back-link a { color: #79c0ff; text-decoration: none; font-size: 0.9rem; }
+    .back-link a:hover { text-decoration: underline; }
+
+    @media (max-width: 600px) {
+      .finding-grid { grid-template-columns: 1fr; }
+      .samples { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+<div class="container">
+
+  <h1>Multi-Reference Voice Cloning for Qwen3-TTS</h1>
+  <p class="subtitle">Audio demos · A Trade-Off Between Speaker Fidelity and Naturalness</p>
+
+  <div class="badges">
+    <a href="https://arxiv.org/abs/XXXX.XXXXX"><img src="https://img.shields.io/badge/arXiv-XXXX.XXXXX-b31b1b.svg" alt="arXiv"></a>
+    <a href="https://github.com/CallumJMac/tts"><img src="https://img.shields.io/badge/GitHub-CallumJMac/tts-24292e.svg?logo=github" alt="GitHub"></a>
+    <a href="https://opensource.org/licenses/MIT"><img src="https://img.shields.io/badge/License-MIT-yellow.svg" alt="MIT"></a>
+  </div>
+
+  <div class="finding">
+    <p>When multiple reference recordings are available, how should they be combined?
+    1,275 controlled synthesis runs on Qwen3-TTS reveal a clear Pareto trade-off:</p>
+    <div class="finding-grid">
+      <div class="finding-item">
+        <div class="goal">Maximise speaker identity</div>
+        <div class="strategy">ConcatAudio, longest 3 refs</div>
+        <div class="gain">SIM +0.02 · d = 0.62 · p &lt; 0.001</div>
+      </div>
+      <div class="finding-item">
+        <div class="goal">Maximise naturalness</div>
+        <div class="strategy">EmbedAvg, any 3 refs</div>
+        <div class="gain">UTMOS +0.06 · d = 0.61 · p &lt; 10⁻⁷</div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ── Demo A: Speaker identity contrast ──────────────────────────── -->
+  <h2>Demo A — Speaker Identity Contrast</h2>
+  <p>Speaker 1995 (LibriTTS-R). Same target text across all three strategies.
+  Listen for how closely the voice matches the reference speaker.</p>
+  <div class="target-text">
+    "So the world was happy, and the face of the black belt green and luxuriant
+    with thickening flecks of the coming foam of the cotton."
+  </div>
+
+  <div class="demo-set">
+    <div class="samples">
+      <div class="sample">
+        <div class="sample-label">Strategy</div>
+        <div class="sample-name baseline">Single baseline</div>
+        <div class="metrics">
+          <div class="metric">SIM <span>0.870</span></div>
+          <div class="metric">UTMOS <span>4.481</span></div>
+        </div>
+        <audio controls preload="none">
+          <source src="samples/demo_a_baseline.wav" type="audio/wav">
+        </audio>
+      </div>
+
+      <div class="sample">
+        <div class="sample-label">Strategy</div>
+        <div class="sample-name concat">ConcatAudio · 3 refs (longest)</div>
+        <div class="metrics">
+          <div class="metric">SIM <span class="up">0.987 ↑+0.117</span></div>
+          <div class="metric">UTMOS <span>4.457</span></div>
+        </div>
+        <audio controls preload="none">
+          <source src="samples/demo_a_concat.wav" type="audio/wav">
+        </audio>
+      </div>
+
+      <div class="sample">
+        <div class="sample-label">Strategy</div>
+        <div class="sample-name embed">EmbedAvg · 3 refs (random)</div>
+        <div class="metrics">
+          <div class="metric">SIM <span>0.949</span></div>
+          <div class="metric">UTMOS <span>4.472</span></div>
+        </div>
+        <audio controls preload="none">
+          <source src="samples/demo_a_embed.wav" type="audio/wav">
+        </audio>
+      </div>
+    </div>
+    <p class="section-note">ConcatAudio achieves SIM +0.117 over baseline — largest observed gain in the experiment.</p>
+  </div>
+
+  <!-- ── Demo B: Naturalness contrast ───────────────────────────────── -->
+  <h2>Demo B — Naturalness Contrast</h2>
+  <p>Speaker 1188 (LibriTTS-R). Same target text. Listen for fluency and
+  naturalness of delivery.</p>
+  <div class="target-text">
+    "And also, Carpaccio does it with a touch, with one sweep of his brush;
+    three minutes at the most allowed for all the beast; while Michael Angelo
+    has been haggling at this dragon's neck for an hour."
+  </div>
+
+  <div class="demo-set">
+    <div class="samples">
+      <div class="sample">
+        <div class="sample-label">Strategy</div>
+        <div class="sample-name baseline">Single baseline</div>
+        <div class="metrics">
+          <div class="metric">UTMOS <span>4.100</span></div>
+          <div class="metric">SIM <span>0.973</span></div>
+        </div>
+        <audio controls preload="none">
+          <source src="samples/demo_b_baseline.wav" type="audio/wav">
+        </audio>
+      </div>
+
+      <div class="sample">
+        <div class="sample-label">Strategy</div>
+        <div class="sample-name concat">ConcatAudio · 3 refs (longest)</div>
+        <div class="metrics">
+          <div class="metric">UTMOS <span>4.414</span></div>
+          <div class="metric">SIM <span class="up">0.981 ↑</span></div>
+        </div>
+        <audio controls preload="none">
+          <source src="samples/demo_b_concat.wav" type="audio/wav">
+        </audio>
+      </div>
+
+      <div class="sample">
+        <div class="sample-label">Strategy</div>
+        <div class="sample-name embed">EmbedAvg · 3 refs (random)</div>
+        <div class="metrics">
+          <div class="metric">UTMOS <span class="up">4.477 ↑+0.377</span></div>
+          <div class="metric">SIM <span>0.977</span></div>
+        </div>
+        <audio controls preload="none">
+          <source src="samples/demo_b_embed.wav" type="audio/wav">
+        </audio>
+      </div>
+    </div>
+    <p class="section-note">EmbedAvg achieves UTMOS +0.377 over baseline — largest observed naturalness gain in the experiment.</p>
+  </div>
+
+  <div class="back-link">
+    <a href="https://github.com/CallumJMac/tts">← Back to GitHub repo</a>
+  </div>
+
+</div>
+</body>
+</html>

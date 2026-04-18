@@ -36,4 +36,11 @@ docs/paper-pages/
 # Allow samples directory
 !samples/
 !samples/**
-docs/
+
+# Allow docs/ (GitHub Pages demo site) but keep plans/inspection local
+!docs/
+!docs/**
+docs/paper-pages/
+docs/paper-inspection*.md
+docs/plans/
+docs/superpowers/
