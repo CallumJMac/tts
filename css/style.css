@@ -1,0 +1,168 @@
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    background: #f5f7fa;
+    color: #333;
+    line-height: 1.6;
+    padding: 20px;
+}
+
+#app {
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+#page-container {
+    background: #fff;
+    border-radius: 8px;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    padding: 40px;
+}
+
+h1 { font-size: 1.8rem; margin-bottom: 16px; }
+h2 { font-size: 1.4rem; margin-bottom: 12px; color: #2c3e50; }
+h3 { font-size: 1.1rem; margin-bottom: 8px; }
+
+p, li { margin-bottom: 8px; }
+ul { padding-left: 20px; }
+
+.btn {
+    display: inline-block;
+    padding: 12px 24px;
+    background: #3498db;
+    color: #fff;
+    border: none;
+    border-radius: 4px;
+    font-size: 1rem;
+    cursor: pointer;
+    margin-top: 16px;
+}
+.btn:hover { background: #2980b9; }
+.btn:disabled { background: #95a5a6; cursor: not-allowed; }
+
+.btn-next { float: right; }
+
+/* Screening */
+.screening-question {
+    margin-bottom: 20px;
+    padding: 16px;
+    background: #f8f9fa;
+    border-radius: 4px;
+}
+.screening-question label { display: block; margin-bottom: 4px; font-weight: 500; }
+.screening-question select, .screening-question input {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #ddd;
+    border-radius: 4px;
+    font-size: 1rem;
+}
+
+/* Headphone check */
+.headphone-check {
+    text-align: center;
+    padding: 20px;
+}
+.headphone-check .options { margin-top: 16px; }
+.headphone-check .options button {
+    margin: 8px;
+    padding: 10px 20px;
+    border: 2px solid #3498db;
+    background: #fff;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 1rem;
+}
+.headphone-check .options button:hover { background: #ecf0f1; }
+
+/* MUSHRA trial */
+.trial-container { margin-top: 20px; }
+
+.reference-player {
+    background: #eaf2f8;
+    padding: 16px;
+    border-radius: 4px;
+    margin-bottom: 20px;
+    text-align: center;
+}
+.reference-player audio { width: 100%; max-width: 400px; }
+
+.condition-row {
+    display: flex;
+    align-items: center;
+    padding: 12px 16px;
+    margin-bottom: 8px;
+    background: #f8f9fa;
+    border-radius: 4px;
+    gap: 16px;
+}
+.condition-row .label {
+    min-width: 80px;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+.condition-row audio { flex: 0 0 200px; height: 32px; }
+.condition-row .slider-container { flex: 1; display: flex; align-items: center; gap: 8px; }
+.condition-row input[type="range"] { flex: 1; }
+.condition-row .value { min-width: 30px; text-align: right; font-weight: 600; }
+
+.scale-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 0.75rem;
+    color: #666;
+    padding: 0 96px 0 296px;
+    margin-bottom: 16px;
+}
+
+.scale-header {
+    font-weight: 600;
+    margin-top: 24px;
+    margin-bottom: 8px;
+    color: #2c3e50;
+}
+
+/* Progress */
+.progress-bar {
+    width: 100%;
+    height: 6px;
+    background: #ecf0f1;
+    border-radius: 3px;
+    margin-bottom: 20px;
+}
+.progress-bar .fill {
+    height: 100%;
+    background: #3498db;
+    border-radius: 3px;
+    transition: width 0.3s;
+}
+
+/* Completion */
+.completion { text-align: center; padding: 40px 20px; }
+.completion h1 { color: #27ae60; }
+.completion .code {
+    display: inline-block;
+    margin-top: 16px;
+    padding: 12px 24px;
+    background: #ecf0f1;
+    border-radius: 4px;
+    font-size: 1.4rem;
+    font-family: monospace;
+    letter-spacing: 2px;
+}
+
+/* Warning */
+.warning {
+    background: #ffeaa7;
+    border-left: 4px solid #fdcb6e;
+    padding: 12px 16px;
+    margin: 12px 0;
+    border-radius: 0 4px 4px 0;
+}
+
+.error-msg {
+    color: #e74c3c;
+    font-size: 0.9rem;
+    margin-top: 4px;
+}

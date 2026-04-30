@@ -1,0 +1,93 @@
+[
+  {
+    "speaker_id": "5142",
+    "target_id": "5142_33396_000045_000000",
+    "contrast": 2.0843,
+    "sim_diff": 0.0183,
+    "utmos_diff": 2.066
+  },
+  {
+    "speaker_id": "237",
+    "target_id": "237_134500_000038_000000",
+    "contrast": 0.1273,
+    "sim_diff": 0.1043,
+    "utmos_diff": 0.023
+  },
+  {
+    "speaker_id": "121",
+    "target_id": "121_127105_000014_000001",
+    "contrast": 0.1829,
+    "sim_diff": 0.1099,
+    "utmos_diff": 0.073
+  },
+  {
+    "speaker_id": "908",
+    "target_id": "908_31957_000003_000002",
+    "contrast": 0.1342,
+    "sim_diff": 0.0262,
+    "utmos_diff": 0.108
+  },
+  {
+    "speaker_id": "237",
+    "target_id": "237_126133_000027_000000",
+    "contrast": 0.1348,
+    "sim_diff": 0.0218,
+    "utmos_diff": 0.113
+  },
+  {
+    "speaker_id": "908",
+    "target_id": "908_31957_000006_000000",
+    "contrast": 0.5057,
+    "sim_diff": 0.1817,
+    "utmos_diff": 0.324
+  },
+  {
+    "speaker_id": "1188",
+    "target_id": "1188_133604_000039_000001",
+    "contrast": 0.2795,
+    "sim_diff": 0.0195,
+    "utmos_diff": 0.26
+  },
+  {
+    "speaker_id": "1580",
+    "target_id": "1580_141083_000086_000000",
+    "contrast": 0.3421,
+    "sim_diff": 0.0831,
+    "utmos_diff": 0.259
+  },
+  {
+    "speaker_id": "1284",
+    "target_id": "1284_1180_000028_000000",
+    "contrast": 0.5202,
+    "sim_diff": 0.1952,
+    "utmos_diff": 0.325
+  },
+  {
+    "speaker_id": "1188",
+    "target_id": "1188_133604_000028_000003",
+    "contrast": 0.4567,
+    "sim_diff": 0.0057,
+    "utmos_diff": 0.451
+  },
+  {
+    "speaker_id": "1580",
+    "target_id": "1580_141083_000051_000001",
+    "contrast": 0.1338,
+    "sim_diff": 0.0548,
+    "utmos_diff": 0.079
+  },
+  {
+    "speaker_id": "1284",
+    "target_id": "1284_1180_000045_000000",
+    "contrast": 0.9974,
+    "sim_diff": 0.0294,
+    "utmos_diff": 0.968
+  },
+  {
+    "speaker_id": "121",
+    "target_id": "121_127105_000019_000000",
+    "contrast": 0.1644,
+    "sim_diff": 0.0214,
+    "utmos_diff": 0.143
+  }
+]

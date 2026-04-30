@@ -1,0 +1,261 @@
+{
+  "testname": "Multi-Reference Voice Cloning: Naturalness and Speaker Match",
+  "testId": "multiref_vc_v1",
+  "resultsEndpoint": "",
+  "completionCode": "VCMUSHRA2026",
+  "pages": [
+    {
+      "type": "consent",
+      "title": "Informed Consent",
+      "content": [
+        "You are invited to participate in a research study on text-to-speech voice cloning quality.",
+        "The study will take approximately 10 minutes. You will listen to audio samples and rate them on two scales: naturalness and speaker similarity.",
+        "Your participation is voluntary. You may withdraw at any time without penalty.",
+        "No personally identifying information is collected beyond your Prolific ID.",
+        "Your anonymised ratings will be used in a research publication.",
+        "By clicking 'I agree' below, you confirm you are 18+ years old, a fluent English speaker, and consent to participate."
+      ]
+    },
+    {
+      "type": "screening",
+      "questions": [
+        {
+          "id": "prolific_id",
+          "label": "Prolific ID",
+          "type": "text",
+          "placeholder": "Enter your Prolific ID"
+        },
+        {
+          "id": "native_english",
+          "label": "Are you a native or fluent English speaker?",
+          "type": "select",
+          "options": [
+            "Yes",
+            "No"
+          ]
+        },
+        {
+          "id": "hearing",
+          "label": "Do you have normal hearing (no known hearing impairment)?",
+          "type": "select",
+          "options": [
+            "Yes",
+            "No"
+          ]
+        },
+        {
+          "id": "headphones",
+          "label": "Are you wearing headphones or earphones?",
+          "type": "select",
+          "options": [
+            "Yes - headphones/earphones",
+            "No - using speakers"
+          ]
+        },
+        {
+          "id": "age_range",
+          "label": "Age range",
+          "type": "select",
+          "options": [
+            "18-24",
+            "25-34",
+            "35-44",
+            "45-54",
+            "55-64",
+            "65+"
+          ]
+        }
+      ],
+      "exclusions": [
+        {
+          "id": "native_english",
+          "value": "No",
+          "message": "This study requires fluent English speakers. Thank you for your interest."
+        },
+        {
+          "id": "hearing",
+          "value": "No",
+          "message": "This study requires normal hearing. Thank you for your interest."
+        },
+        {
+          "id": "headphones",
+          "value": "No - using speakers",
+          "message": "Please use headphones for this study. Reload the page when you have headphones available."
+        }
+      ]
+    },
+    {
+      "type": "headphone_check",
+      "audio": "audio/headphone_check.wav",
+      "correct_answer": "left"
+    },
+    {
+      "type": "generic",
+      "title": "Instructions",
+      "content": [
+        "You will hear a Reference recording of a speaker, followed by several synthesised speech samples.",
+        "For each sample, rate it on two scales from 0 to 100:",
+        "<b>Naturalness</b>: How natural and human-like does the speech sound? (Ignore whether it matches the reference speaker.)",
+        "<b>Speaker Match</b>: How closely does the voice match the reference speaker's voice? (Ignore audio quality.)",
+        "One sample in each trial is intentionally degraded (the 'anchor'). Use the full range of the scale.",
+        "There is a short practice trial next, then 12 rated trials. The study takes about 10 minutes."
+      ]
+    },
+    {
+      "type": "training",
+      "id": "practice",
+      "content": "This is a practice trial. Familiarise yourself with the interface.",
+      "reference": "audio/practice/reference.wav",
+      "stimuli": {
+        "anchor": "audio/practice/anchor.wav",
+        "condition_A": "audio/practice/single_baseline.wav",
+        "condition_B": "audio/practice/concat_longest_3.wav",
+        "condition_C": "audio/practice/embed_random_3.wav"
+      }
+    },
+    {
+      "type": "mushra",
+      "id": "trial_00",
+      "trialNumber": 1,
+      "totalTrials": 10,
+      "content": "Rate each sample compared to the reference speaker.",
+      "stimuli": {
+        "single_baseline": "audio/trial_00/single_baseline.wav",
+        "concat_longest_3": "audio/trial_00/concat_longest_3.wav",
+        "embed_random_3": "audio/trial_00/embed_random_3.wav",
+        "anchor": "audio/trial_00/anchor.wav"
+      },
+      "reference": "audio/trial_00/reference.wav"
+    },
+    {
+      "type": "mushra",
+      "id": "trial_01",
+      "trialNumber": 2,
+      "totalTrials": 10,
+      "content": "Rate each sample compared to the reference speaker.",
+      "stimuli": {
+        "single_baseline": "audio/trial_01/single_baseline.wav",
+        "concat_longest_3": "audio/trial_01/concat_longest_3.wav",
+        "embed_random_3": "audio/trial_01/embed_random_3.wav",
+        "anchor": "audio/trial_01/anchor.wav"
+      },
+      "reference": "audio/trial_01/reference.wav"
+    },
+    {
+      "type": "mushra",
+      "id": "trial_02",
+      "trialNumber": 3,
+      "totalTrials": 10,
+      "content": "Rate each sample compared to the reference speaker.",
+      "stimuli": {
+        "single_baseline": "audio/trial_02/single_baseline.wav",
+        "concat_longest_3": "audio/trial_02/concat_longest_3.wav",
+        "embed_random_3": "audio/trial_02/embed_random_3.wav",
+        "anchor": "audio/trial_02/anchor.wav"
+      },
+      "reference": "audio/trial_02/reference.wav"
+    },
+    {
+      "type": "mushra",
+      "id": "trial_03",
+      "trialNumber": 4,
+      "totalTrials": 10,
+      "content": "Rate each sample compared to the reference speaker.",
+      "stimuli": {
+        "single_baseline": "audio/trial_03/single_baseline.wav",
+        "concat_longest_3": "audio/trial_03/concat_longest_3.wav",
+        "embed_random_3": "audio/trial_03/embed_random_3.wav",
+        "anchor": "audio/trial_03/anchor.wav"
+      },
+      "reference": "audio/trial_03/reference.wav"
+    },
+    {
+      "type": "mushra",
+      "id": "trial_04",
+      "trialNumber": 5,
+      "totalTrials": 10,
+      "content": "Rate each sample compared to the reference speaker.",
+      "stimuli": {
+        "single_baseline": "audio/trial_04/single_baseline.wav",
+        "concat_longest_3": "audio/trial_04/concat_longest_3.wav",
+        "embed_random_3": "audio/trial_04/embed_random_3.wav",
+        "anchor": "audio/trial_04/anchor.wav"
+      },
+      "reference": "audio/trial_04/reference.wav"
+    },
+    {
+      "type": "mushra",
+      "id": "trial_05",
+      "trialNumber": 6,
+      "totalTrials": 10,
+      "content": "Rate each sample compared to the reference speaker.",
+      "stimuli": {
+        "single_baseline": "audio/trial_05/single_baseline.wav",
+        "concat_longest_3": "audio/trial_05/concat_longest_3.wav",
+        "embed_random_3": "audio/trial_05/embed_random_3.wav",
+        "anchor": "audio/trial_05/anchor.wav"
+      },
+      "reference": "audio/trial_05/reference.wav"
+    },
+    {
+      "type": "mushra",
+      "id": "trial_06",
+      "trialNumber": 7,
+      "totalTrials": 10,
+      "content": "Rate each sample compared to the reference speaker.",
+      "stimuli": {
+        "single_baseline": "audio/trial_06/single_baseline.wav",
+        "concat_longest_3": "audio/trial_06/concat_longest_3.wav",
+        "embed_random_3": "audio/trial_06/embed_random_3.wav",
+        "anchor": "audio/trial_06/anchor.wav"
+      },
+      "reference": "audio/trial_06/reference.wav"
+    },
+    {
+      "type": "mushra",
+      "id": "trial_07",
+      "trialNumber": 8,
+      "totalTrials": 10,
+      "content": "Rate each sample compared to the reference speaker.",
+      "stimuli": {
+        "single_baseline": "audio/trial_07/single_baseline.wav",
+        "concat_longest_3": "audio/trial_07/concat_longest_3.wav",
+        "embed_random_3": "audio/trial_07/embed_random_3.wav",
+        "anchor": "audio/trial_07/anchor.wav"
+      },
+      "reference": "audio/trial_07/reference.wav"
+    },
+    {
+      "type": "mushra",
+      "id": "trial_08",
+      "trialNumber": 9,
+      "totalTrials": 10,
+      "content": "Rate each sample compared to the reference speaker.",
+      "stimuli": {
+        "single_baseline": "audio/trial_08/single_baseline.wav",
+        "concat_longest_3": "audio/trial_08/concat_longest_3.wav",
+        "embed_random_3": "audio/trial_08/embed_random_3.wav",
+        "anchor": "audio/trial_08/anchor.wav"
+      },
+      "reference": "audio/trial_08/reference.wav"
+    },
+    {
+      "type": "mushra",
+      "id": "trial_09",
+      "trialNumber": 10,
+      "totalTrials": 10,
+      "content": "Rate each sample compared to the reference speaker.",
+      "stimuli": {
+        "single_baseline": "audio/trial_09/single_baseline.wav",
+        "concat_longest_3": "audio/trial_09/concat_longest_3.wav",
+        "embed_random_3": "audio/trial_09/embed_random_3.wav",
+        "anchor": "audio/trial_09/anchor.wav"
+      },
+      "reference": "audio/trial_09/reference.wav"
+    },
+    {
+      "type": "completion",
+      "completionCode": "VCMUSHRA2026"
+    }
+  ]
+}
