@@ -1,3 +1,12 @@
+> **This repository is archived.** It holds an earlier version of this work
+> (a multi-reference study of Qwen3-TTS alone). The current paper, code, scores
+> and audio samples are at
+> [CallumJMac/conditioning-sites](https://github.com/CallumJMac/conditioning-sites):
+> *Speaker Identity Is Split Across Conditioning Sites: Prompt and Embedding
+> Pathways in Zero-Shot Voice Cloning*. Some results below were revised there,
+> after an x-vector normalisation bug was found and fixed and the evaluation was
+> moved to the Seed-TTS-eval protocol.
+
 <div align="center">
 
 # 🎙️ Multi-Reference Voice Cloning for Qwen3-TTS
